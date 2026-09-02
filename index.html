@@ -588,8 +588,8 @@
     <div id="tag-cyl1" class="marker-tag">1A Clamping Cylinder</div>
     <div id="tag-cyl2" class="marker-tag marker-stamp">2A Stamping Cylinder (STAMP)</div>
     <div id="tag-anvil" class="marker-tag" style="background:#f59e0b; border-color:#fbbf24;">GTEE ANVIL</div>
-    <div id="tag-v1" class="marker-tag">5/2 Valve 1 • 4V210-08</div>
-    <div id="tag-v2" class="marker-tag">5/2 Valve 2 • 4V210-08</div>
+    <div id="tag-v1" class="marker-tag">3/2 Valve 1 • 3V210-08</div>
+    <div id="tag-v2" class="marker-tag">3/2 Valve 2 • 3V210-08</div>
     <div id="tag-frl" class="marker-tag">FRL Air Trio (0.60 MPa)</div>
     <div id="tag-motor" class="marker-tag">400W DC Motor & Encoder</div>
 
@@ -655,7 +655,7 @@
             <div class="cam-grid">
                 <button class="cam-btn active" onclick="switchCamera('workbench', this)">&#128187; Full Workbench</button>
                 <button class="cam-btn" onclick="switchCamera('cylinders', this)">&#9881; Clamping & Stamping</button>
-                <button class="cam-btn" onclick="switchCamera('valves', this)">&#9654; 5/2 Solenoid Valves</button>
+                <button class="cam-btn" onclick="switchCamera('valves', this)">&#9654; 3/2 Solenoid Valves</button>
                 <button class="cam-btn" onclick="switchCamera('compressor', this)">&#128295; OUTSTANDING Compressor</button>
                 <button class="cam-btn" onclick="switchCamera('motor', this)">&#9889; 400W DC Motor & Encoder</button>
                 <button class="cam-btn" onclick="switchCamera('electric', this)">&#128260; 24V Control Panel</button>
@@ -784,10 +784,10 @@
                 { id: "2A", name: "2A Stamping Cylinder", pos: 1.0, target: 1.0, speed: 2.4, strokeMm: 200, boreMm: 40 }
             ],
 
-            // 5/2 Solenoid Valves
+            // 3/2 Solenoid Valves (Normally Closed, Spring Return)
             valves: [
-                { id: "V1", name: "5/2 Valve 1 (4V210-08)", state: "A", solA: true, solB: false },
-                { id: "V2", name: "5/2 Valve 2 (4V210-08)", state: "A", solA: true, solB: false }
+                { id: "V1", name: "3/2 Valve 1 (3V210-08)", state: "A", solA: true, solB: false, springReturn: true },
+                { id: "V2", name: "3/2 Valve 2 (3V210-08)", state: "A", solA: true, solB: false, springReturn: true }
             ],
 
             // Limit Switches (SQ1/SQ2 for Cyl 1A, SQ3/SQ4 for Cyl 2A)
@@ -1698,23 +1698,31 @@
             });
         }
 
-        // 5. 5/2 Solenoid Valves
+        // 5. 3/2 Solenoid Valves (Normally Closed, Spring Return)
         function buildSolenoidValves() {
             const valveConfigs = [
-                { id: "V1", name: "5/2 Valve 1", x: -0.52, y: 0.62, tagId: "tag-v1" },
-                { id: "V2", name: "5/2 Valve 2", x: 0.45, y: 0.62, tagId: "tag-v2" }
+                { id: "V1", name: "3/2 Valve 1", x: -0.52, y: 0.62, tagId: "tag-v1" },
+                { id: "V2", name: "3/2 Valve 2", x:  0.45, y: 0.62, tagId: "tag-v2" }
             ];
 
             valveConfigs.forEach((cfg, idx) => {
                 const vGroup = new THREE.Group();
                 vGroup.position.set(cfg.x, cfg.y, 0.05);
 
-                const mount = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.012), materials.switchBaseBlack);
+                // ── Manifold mounting plate ──────────────────────────────────
+                const mount = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.10, 0.012),
+                    materials.switchBaseBlack
+                );
                 vGroup.add(mount);
 
-                const bodyLen = 0.11;
-                const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(bodyLen, 0.048, 0.045), materials.solenoidBodySolid);
-                bodyMesh.position.set(0, 0, 0.03);
+                // ── Main valve body (shorter than 5/2 — only 3 ports) ────────
+                const bodyLen = 0.082;
+                const bodyMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(bodyLen, 0.044, 0.042),
+                    materials.solenoidBodySolid
+                );
+                bodyMesh.position.set(-0.008, 0, 0.030);
                 vGroup.add(bodyMesh);
 
                 dynamicObjects.transMeshItems.push({
@@ -1723,40 +1731,97 @@
                     transMat: materials.valveGlassTrans
                 });
 
-                for (let px of [-0.028, 0.028]) {
-                    const pt = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.02, 12), materials.brassFitting);
-                    pt.position.set(px, 0.032, 0.03);
-                    vGroup.add(pt);
-                }
-                for (let px of [-0.035, 0, 0.035]) {
-                    const pb = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.02, 12), materials.brassFitting);
-                    pb.position.set(px, -0.032, 0.03);
-                    vGroup.add(pb);
+                // ── 3/2 Valve label texture ──────────────────────────────────
+                const valveTex = makeTextTex("3/2 NC", "#f8fafc", "#0f172a", 256, 128, 32, "3V210-08");
+                const labelMesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.055, 0.026),
+                    new THREE.MeshStandardMaterial({ map: valveTex })
+                );
+                labelMesh.position.set(-0.008, 0, 0.052);
+                vGroup.add(labelMesh);
+
+                // ── 3 Ports: 
+                //    P (supply)  → bottom centre
+                //    A (work)    → top centre  
+                //    R (exhaust) → bottom left  ──────────────────────────────
+                const portPositions = [
+                    { x:  0.0,   y:  0.030, label: 'A' },   // top — actuator port
+                    { x:  0.012, y: -0.030, label: 'P' },   // bottom right — pressure supply
+                    { x: -0.020, y: -0.030, label: 'R' },   // bottom left — return/exhaust
+                ];
+                portPositions.forEach(pp => {
+                    const port = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.007, 0.007, 0.018, 12),
+                        materials.brassFitting
+                    );
+                    port.position.set(pp.x, pp.y, 0.030);
+                    vGroup.add(port);
+                });
+
+                // ── Single Solenoid Coil (energise side — RIGHT) ─────────────
+                const coil = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.036, 0.044, 0.040),
+                    materials.solenoidCoilRed
+                );
+                coil.position.set(bodyLen / 2 + 0.022, 0, 0.030);
+                vGroup.add(coil);
+
+                // Connector pin on coil
+                const pin = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.003, 0.003, 0.012, 8),
+                    materials.chromeRodSilver
+                );
+                pin.position.set(bodyLen / 2 + 0.022, 0.028, 0.030);
+                vGroup.add(pin);
+
+                // ── Spring Return (de-energise side — LEFT) ──────────────────
+                // Represented as a compact coiled-spring cylinder with a spring cap
+                const springCap = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.018, 0.030, 0.030),
+                    materials.hexCouplerSilver
+                );
+                springCap.position.set(-(bodyLen / 2 + 0.012), 0, 0.030);
+                vGroup.add(springCap);
+
+                // Spring coil rings (4 thin rings inside cap)
+                for (let i = 0; i < 4; i++) {
+                    const ring = new THREE.Mesh(
+                        new THREE.TorusGeometry(0.008, 0.0018, 8, 16),
+                        materials.chromeRodSilver
+                    );
+                    ring.rotation.y = Math.PI / 2;
+                    ring.position.set(-(bodyLen / 2 + 0.018) + i * 0.004, 0, 0.030);
+                    vGroup.add(ring);
                 }
 
-                for (let side of [-1, 1]) {
-                    const coil = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.046, 0.042), materials.solenoidCoilRed);
-                    coil.position.set(side * (bodyLen / 2 + 0.022), 0, 0.03);
-                    vGroup.add(coil);
-                }
-
+                // ── Internal Spool (3-land for 3/2) ─────────────────────────
                 const spoolGroup = new THREE.Group();
-                const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.09, 16), materials.chromeRodSilver);
+                const shaft = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.004, 0.004, 0.070, 12),
+                    materials.chromeRodSilver
+                );
                 shaft.geometry.rotateZ(Math.PI / 2);
                 spoolGroup.add(shaft);
 
-                for (let s = -2; s <= 2; s++) {
-                    const land = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.01, 16), materials.valveSpoolBrass);
+                // 3 lands (spools) for 3/2 valve: left, centre, right
+                for (let s = -1; s <= 1; s++) {
+                    const land = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.013, 0.013, 0.012, 16),
+                        materials.valveSpoolBrass
+                    );
                     land.geometry.rotateZ(Math.PI / 2);
-                    land.position.set(s * 0.018, 0, 0);
+                    land.position.set(s * 0.020, 0, 0);
                     spoolGroup.add(land);
                 }
-                spoolGroup.position.set(0.015, 0, 0.03);
+                spoolGroup.position.set(0.0, 0, 0.030);
                 vGroup.add(spoolGroup);
                 dynamicObjects.valveSpools.push({ group: spoolGroup, idx: idx });
 
                 scene.add(vGroup);
-                dynamicObjects.screenMarkers.push({ id: cfg.tagId, pos3D: new THREE.Vector3(cfg.x, cfg.y + 0.09, 0.05) });
+                dynamicObjects.screenMarkers.push({
+                    id: cfg.tagId,
+                    pos3D: new THREE.Vector3(cfg.x, cfg.y + 0.08, 0.05)
+                });
             });
         }
 
@@ -2038,9 +2103,11 @@
                 }
             });
 
-            // Valve Spool Shifts
+            // Valve Spool Shifts — 3/2 valve has shorter travel (energise vs spring-return)
             SIM.valves.forEach((v, idx) => {
-                const targetX = (v.state === 'A') ? 0.015 : -0.015;
+                // state 'A' = solenoid energised (spool pushed right)
+                // state 'B' = spring return (spool pushed back left)
+                const targetX = (v.state === 'A') ? 0.012 : -0.012;
                 const spObj = dynamicObjects.valveSpools[idx];
                 if (spObj) {
                     spObj.group.position.x += (targetX - spObj.group.position.x) * 0.22;
@@ -2087,10 +2154,11 @@
             v.solA = (state === 'A');
             v.solB = (state === 'B');
             SIM.cylinders[vIdx].target = (state === 'A') ? 1.0 : 0.0;
-            _shadowNeedsUpdate = true; // repaint shadows when pistons move
+            _shadowNeedsUpdate = true;
             playAirPuff(0.35, 760);
             playRelayClick();
-            logEvent(`${v.name} &rarr; State [${state}] (Target: ${state === 'A' ? '100% EXTEND' : '0% RETRACT'})`, 'success');
+            const modeLabel = (state === 'A') ? 'ENERGISED → P→A (Cylinder Extends)' : 'SPRING RETURN → A→R (Cylinder Retracts)';
+            logEvent(`${v.name} → [${modeLabel}]`, 'success');
         }
 
         /* =========================================================================
