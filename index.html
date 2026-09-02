@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTEE GTPHT-0002 — Electro-Pneumatic Interactive Web Workbench</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --surface-1: rgba(22, 27, 34, 0.88);
+            --surface-2: rgba(33, 38, 45, 0.92);
+            --border-subtle: #30363d;
+            --border-active: #58a6ff;
+            
+            --cyan-glow: #00e5ff;
+            --cyan-bubble: #bbf7d0;
+            --blue-accent: #1f6feb;
+            --orange-pneumatic: #ff6d00;
+            --green-glow: #00e676;
+            --red-stamp: #ff1744;
+            --gold-piston: #f59e0b;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* HUD & Web App Glassmorphism Layer */
+        .hud-overlay {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .clickable {
+            pointer-events: auto;
+        }
+
+        /* Top Header Navigation Bar */
+        #navbar {
+            top: 14px;
+            left: 18px;
+            right: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--surface-1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            padding: 8px 18px;
+            border-radius: 12px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+        }
+
+        .brand-logo {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #ffffff;
+        }
+
+        .brand-logo svg {
+            width: 24px;
+            height: 24px;
+            fill: url(#logo-grad);
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+        }
+
+        .brand-tag {
+            font-size: 10px;
+            color: var(--cyan-glow);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        /* 3-Mode Visual Rendering Switcher */
+        .mode-toggle-group {
+            display: flex;
+            background: var(--surface-1);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            padding: 5px;
+            border-radius: 14px;
+            gap: 6px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+
+        .mode-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-tab svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+        }
+
+        .mode-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .mode-tab.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #1f6feb, #238636);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 0 16px rgba(31, 111, 235, 0.5);
+        }
+
+        .mode-tab.active.tab-working {
+            background: linear-gradient(135deg, #0d9488, #059669);
+            border-color: #10b981;
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.55);
+        }
+
+        .mode-tab.active.tab-transparent {
+            background: linear-gradient(135deg, #0284c7, #06b6d4);
+            border-color: #38bdf8;
+            box-shadow: 0 0 22px rgba(56, 189, 248, 0.7);
+        }
+
+        /* Top Right Utilities */
+        .top-utils {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .util-btn {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(12px);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .util-btn:hover {
+            color: #ffffff;
+            border-color: var(--border-active);
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* Left Navigation & Camera Deck */
+        #left-bar {
+            top: 80px;
+            left: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 220px;
+        }
+
+        .panel-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(16px);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cam-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cam-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .cam-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .cam-btn.active {
+            color: var(--cyan-glow);
+            background: rgba(0, 229, 255, 0.12);
+            border-color: rgba(0, 229, 255, 0.3);
+            font-weight: 600;
+        }
+
+        /* Right Control & Diagnostics Center */
+        #right-deck {
+            top: 80px;
+            right: 18px;
+            width: 340px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 9px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 19px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #ffffff;
+        }
+
+        .stat-unit {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 2px;
+        }
+
+        /* Action Buttons */
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .act-btn {
+            flex: 1;
+            background: var(--blue-accent);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .act-btn:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+
+        .act-btn:active {
+            transform: translateY(1px);
+        }
+
+        .act-btn.btn-green {
+            background: linear-gradient(135deg, #15803d, #22c55e);
+            border-color: #4ade80;
+        }
+
+        .act-btn.btn-orange {
+            background: linear-gradient(135deg, #c2410c, #f97316);
+            border-color: #fb923c;
+        }
+
+        .act-btn.btn-purple {
+            background: linear-gradient(135deg, #0284c7, #06b6d4);
+            border-color: #38bdf8;
+        }
+
+        .act-btn.btn-red {
+            background: linear-gradient(135deg, #b91c1c, #ef4444);
+            border-color: #f87171;
+        }
+
+        /* Sliders */
+        .range-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .range-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .range-header b {
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #21262d;
+            outline: none;
+            cursor: pointer;
+            accent-color: var(--cyan-glow);
+        }
+
+        /* Matrix LEDs */
+        .led-matrix {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .led-cell {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 6px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .led-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #30363d;
+            border: 1px solid #484f58;
+            transition: all 0.2s ease;
+        }
+
+        .led-dot.active-yellow {
+            background: #ffd600;
+            border-color: #ffff8d;
+            box-shadow: 0 0 10px #ffd600;
+        }
+
+        .led-dot.active-green {
+            background: #00e676;
+            border-color: #b9f6ca;
+            box-shadow: 0 0 10px #00e676;
+        }
+
+        .led-dot.active-red {
+            background: #ff1744;
+            border-color: #ff8a80;
+            box-shadow: 0 0 10px #ff1744;
+        }
+
+        .led-name {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        /* Console Event Log */
+        #log-feed {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 8px;
+            height: 95px;
+            overflow-y: auto;
+            color: #8b949e;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 3px;
+        }
+
+        .log-line {
+            display: flex;
+            gap: 6px;
+        }
+
+        .log-ts { color: #6e7681; }
+        .log-info { color: #58a6ff; }
+        .log-success { color: #3fb950; }
+        .log-warn { color: #d29922; }
+        .log-err { color: #f85149; }
+
+        /* Floating 3D Labels */
+        .marker-tag {
+            position: absolute;
+            background: var(--surface-2);
+            border: 1px solid rgba(0, 229, 255, 0.6);
+            border-radius: 6px;
+            padding: 4px 9px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
+            pointer-events: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 12px rgba(0, 229, 255, 0.35);
+            transform: translate(-50%, -100%);
+            white-space: nowrap;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+        }
+
+        .marker-tag::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px 5px 0;
+            border-style: solid;
+            border-color: rgba(0, 229, 255, 0.6) transparent;
+        }
+
+        .marker-stamp {
+            background: #dc2626;
+            border-color: #f87171;
+            box-shadow: 0 0 14px #dc2626;
+        }
+
+        .marker-stamp::after {
+            border-color: #dc2626 transparent;
+        }
+
+        /* Bottom Floating Bar */
+        #bottom-bar {
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(14px);
+            padding: 8px 22px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 8px 26px rgba(0,0,0,0.45);
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .hint {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .key {
+            background: rgba(255,255,255,0.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+    </style>
+
+    <!-- Three.js, OrbitControls & Tween.js Local Libs -->
+    <script src="libs/three.min.js"></script>
+    <script src="libs/OrbitControls.js"></script>
+    <script src="libs/tween.umd.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- 3D Component Marker Callouts -->
+    <div id="tag-cyl1" class="marker-tag">1A Clamping Cylinder</div>
+    <div id="tag-cyl2" class="marker-tag marker-stamp">2A Stamping Cylinder (STAMP)</div>
+    <div id="tag-anvil" class="marker-tag" style="background:#f59e0b; border-color:#fbbf24;">GTEE ANVIL</div>
+    <div id="tag-v1" class="marker-tag">5/2 Valve 1 • 4V210-08</div>
+    <div id="tag-v2" class="marker-tag">5/2 Valve 2 • 4V210-08</div>
+    <div id="tag-frl" class="marker-tag">FRL Air Trio (0.60 MPa)</div>
+    <div id="tag-motor" class="marker-tag">400W DC Motor & Encoder</div>
+
+    <!-- Top Navigation Bar -->
+    <div id="navbar" class="hud-overlay clickable">
+        <div class="brand-container">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24">
+                    <defs>
+                        <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00e5ff"/>
+                            <stop offset="100%" stop-color="#1f6feb"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="12" cy="12" r="10" stroke="#00e5ff" stroke-width="2" fill="none"/>
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" stroke="#00e5ff" stroke-width="2" fill="none"/>
+                    <path d="M2 12h20" stroke="#00e5ff" stroke-width="2"/>
+                </svg>
+                <span>GTEE</span>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">GTPHT-0002 Electro-Pneumatic Simulator</span>
+                <span class="brand-tag">WEB APP &bull; HIGH-FIDELITY TWIN</span>
+            </div>
+        </div>
+
+        <!-- 3-Mode Visual Rendering Selector -->
+        <div class="mode-toggle-group">
+            <button id="btn-mode-phys" class="mode-tab active" onclick="setRenderMode('physical')" title="Standard Solid Physics Materials">
+                <svg viewBox="0 0 24 24"><path d="M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.94 12.21 22 12 22C11.79 22 11.59 21.94 11.43 21.82L3.53 17.38C3.21 17.21 3 16.88 3 16.5V7.5C3 7.12 3.21 6.79 3.53 6.62L11.43 2.18C11.59 2.06 11.79 2 12 2C12.21 2 12.41 2.06 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z"/></svg>
+                <span>Physical Mode</span>
+            </button>
+            <button id="btn-mode-work" class="mode-tab tab-working" onclick="setRenderMode('working')" title="Live Electric & Flow Paths">
+                <svg viewBox="0 0 24 24"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
+                <span>Full Working Mode</span>
+            </button>
+            <button id="btn-mode-trans" class="mode-tab tab-transparent" onclick="setRenderMode('transparent')" title="Clinical Acrylic Glass Cylinder with Fluid Volume, Bubbles & Flow Lines">
+                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z"/></svg>
+                <span>Transparent Working Mode</span>
+            </button>
+        </div>
+
+        <!-- Utilities -->
+        <div class="top-utils">
+            <button class="util-btn" onclick="toggleAudio()">
+                <span id="sound-icon">&#128266;</span>
+                <span id="sound-text">Sound ON</span>
+            </button>
+            <button class="util-btn" onclick="resetView()">
+                <span>&#8634;</span>
+                <span>Standard View</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Left Camera Deck -->
+    <div id="left-bar" class="hud-overlay clickable">
+        <div class="panel-card">
+            <div class="card-title">
+                <span>Viewpoint Select</span>
+                <span style="color:var(--cyan-glow); font-size:9px;">PRESETS</span>
+            </div>
+            <div class="cam-grid">
+                <button class="cam-btn active" onclick="switchCamera('workbench', this)">&#128187; Full Workbench</button>
+                <button class="cam-btn" onclick="switchCamera('cylinders', this)">&#9881; Clamping & Stamping</button>
+                <button class="cam-btn" onclick="switchCamera('valves', this)">&#9654; 5/2 Solenoid Valves</button>
+                <button class="cam-btn" onclick="switchCamera('compressor', this)">&#128295; OUTSTANDING Compressor</button>
+                <button class="cam-btn" onclick="switchCamera('motor', this)">&#9889; 400W DC Motor & Encoder</button>
+                <button class="cam-btn" onclick="switchCamera('electric', this)">&#128260; 24V Control Panel</button>
+            </div>
+        </div>
+
+        <div class="panel-card">
+            <div class="card-title">Cycle Sequence Status</div>
+            <div style="font-size:12px; font-weight:700; color:var(--cyan-glow);" id="seq-step-name">100% EXTENDED (IDLE)</div>
+            <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Sequence: 1A+ &rarr; 2A+ &rarr; 2A- &rarr; 1A-</div>
+        </div>
+    </div>
+
+    <!-- Right Control Hub -->
+    <div id="right-deck" class="hud-overlay clickable">
+        <!-- Automation & Sequence Control -->
+        <div class="panel-card">
+            <div class="card-title">Automation Control Deck</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div class="btn-row">
+                    <button class="act-btn btn-green" onclick="actuateCylinders('extend')">EXTEND A+B+</button>
+                    <button class="act-btn btn-orange" onclick="actuateCylinders('retract')">RETRACT A-B-</button>
+                </div>
+                <button id="btn-seq-auto" class="act-btn btn-purple" onclick="toggleAutoSequence()">START 1A+/2A+/2A-/1A- SEQUENCE</button>
+                <div class="btn-row">
+                    <button id="btn-comp-power" class="act-btn btn-green" onclick="toggleCompressor()">COMPRESSOR: ON</button>
+                    <button id="btn-dc-power" class="act-btn btn-green" onclick="toggleDCPower()">24V BUS: ON</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regulation & Actuator Speeds -->
+        <div class="panel-card">
+            <div class="card-title">Regulation & Actuator Speeds</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div class="range-wrap">
+                    <div class="range-header">
+                        <span>FRL Air Pressure</span>
+                        <b id="lbl-pres">0.40 MPa (4.0 bar)</b>
+                    </div>
+                    <input type="range" id="slider-frl" min="0.0" max="0.8" step="0.05" value="0.4" oninput="setFrlVal(this.value)">
+                </div>
+                <div class="range-wrap">
+                    <div class="range-header">
+                        <span>400W Motor RPM</span>
+                        <b id="lbl-rpm">1200 RPM</b>
+                    </div>
+                    <input type="range" id="slider-rpm" min="0" max="3000" step="50" value="1200" oninput="setMotorRPM(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensors & Solenoids I/O -->
+        <div class="panel-card">
+            <div class="card-title">Limit Switches & Solenoid I/O</div>
+            <div class="led-matrix">
+                <div class="led-cell">
+                    <div class="led-dot" id="led-sq1"></div>
+                    <div class="led-name">SQ1 (1S1)</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot active-yellow" id="led-sq2"></div>
+                    <div class="led-name">SQ2 (1S2)</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot" id="led-sq3"></div>
+                    <div class="led-name">SQ3 (2S1)</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot active-yellow" id="led-sq4"></div>
+                    <div class="led-name">SQ4 (2S2)</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot active-red" id="led-sol1a"></div>
+                    <div class="led-name">SOL 1A</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot" id="led-sol1b"></div>
+                    <div class="led-name">SOL 1B</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot active-red" id="led-sol2a"></div>
+                    <div class="led-name">SOL 2A</div>
+                </div>
+                <div class="led-cell">
+                    <div class="led-dot" id="led-sol2b"></div>
+                    <div class="led-name">SOL 2B</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagnostics Log Feed -->
+        <div class="panel-card">
+            <div class="card-title">Diagnostics & Signal Bus</div>
+            <div id="log-feed"></div>
+        </div>
+    </div>
+
+    <!-- Bottom Instructions Footer -->
+    <div id="bottom-bar" class="hud-overlay clickable">
+        <div class="hint"><span class="key">Left Click + Drag</span> Rotate Orbit</div>
+        <div class="hint"><span class="key">Right Click + Drag</span> Pan Bench</div>
+        <div class="hint"><span class="key">Scroll</span> Zoom In/Out</div>
+        <div class="hint"><span class="key" style="color:var(--cyan-glow);">Transparent Mode</span> Clear Acrylic Barrel, Vibrant Fluid Volume & Bubbles</div>
+    </div>
+
+    <!-- =========================================================================
+         SIMULATION CORE & ENHANCED TRANSPARENT WORKING FLUID DYNAMICS
+         ========================================================================= -->
+    <script>
+        const SIM = {
+            mode: 'physical',
+            power24V: true,
+            compressorOn: true,
+            sound: true,
+            tankPressure: 0.60,
+            frlPressure: 0.40,
+            motorRPM: 1200,
+            autoSequence: false,
+            seqStep: 0,
+            seqTimer: 0,
+
+            // Cylinders (1A Clamping & 2A Stamping) - Initial State: 100% Fully Extended
+            cylinders: [
+                { id: "1A", name: "1A Clamping Cylinder", pos: 1.0, target: 1.0, speed: 2.2, strokeMm: 200, boreMm: 40 },
+                { id: "2A", name: "2A Stamping Cylinder", pos: 1.0, target: 1.0, speed: 2.4, strokeMm: 200, boreMm: 40 }
+            ],
+
+            // 5/2 Solenoid Valves
+            valves: [
+                { id: "V1", name: "5/2 Valve 1 (4V210-08)", state: "A", solA: true, solB: false },
+                { id: "V2", name: "5/2 Valve 2 (4V210-08)", state: "A", solA: true, solB: false }
+            ],
+
+            // Limit Switches (SQ1/SQ2 for Cyl 1A, SQ3/SQ4 for Cyl 2A)
+            limitSwitches: [
+                { id: "SQ1", label: "1S1", cylIdx: 0, trigPos: 0.05, isMin: true, tripped: false, angle: 0 },
+                { id: "SQ2", label: "1S2", cylIdx: 0, trigPos: 0.95, isMin: false, tripped: true, angle: 35 },
+                { id: "SQ3", label: "2S1", cylIdx: 1, trigPos: 0.05, isMin: true, tripped: false, angle: 0 },
+                { id: "SQ4", label: "2S2", cylIdx: 1, trigPos: 0.95, isMin: false, tripped: true, angle: 35 }
+            ],
+
+            audioCtx: null
+        };
+
+        // UI Logger
+        function logEvent(msg, type = "info") {
+            const el = document.getElementById("log-feed");
+            if (!el) return;
+            const now = new Date().toLocaleTimeString().split(" ")[0];
+            const div = document.createElement("div");
+            div.className = "log-line";
+            div.innerHTML = `<span class="log-ts">[${now}]</span> <span class="log-${type}">${msg}</span>`;
+            el.prepend(div);
+            if (el.children.length > 30) el.removeChild(el.lastChild);
+        }
+
+        // Web Audio Synthesizer
+        function initAudioEngine() {
+            if (!SIM.audioCtx) {
+                SIM.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playAirPuff(duration = 0.35, freq = 850) {
+            if (!SIM.sound) return;
+            try {
+                initAudioEngine();
+                if (SIM.audioCtx.state === 'suspended') SIM.audioCtx.resume();
+                
+                const bufferSize = Math.floor(SIM.audioCtx.sampleRate * duration);
+                const buffer = SIM.audioCtx.createBuffer(1, bufferSize, SIM.audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+                }
+                const noise = SIM.audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = SIM.audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = freq;
+                filter.Q.value = 1.4;
+                const gain = SIM.audioCtx.createGain();
+                gain.gain.setValueAtTime(0.16, SIM.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, SIM.audioCtx.currentTime + duration);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(SIM.audioCtx.destination);
+                noise.start();
+            } catch(e) {}
+        }
+
+        function playRelayClick() {
+            if (!SIM.sound) return;
+            try {
+                initAudioEngine();
+                if (SIM.audioCtx.state === 'suspended') SIM.audioCtx.resume();
+                const osc = SIM.audioCtx.createOscillator();
+                const gain = SIM.audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1200, SIM.audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, SIM.audioCtx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.22, SIM.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, SIM.audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(SIM.audioCtx.destination);
+                osc.start();
+                osc.stop(SIM.audioCtx.currentTime + 0.05);
+            } catch(e) {}
+        }
+
+        /* =========================================================================
+           THREE.JS 3D SCENE & HIGH-FIDELITY MATERIALS
+           ========================================================================= */
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0e131a);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1.25, 2.65);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.autoUpdate = false; // manual updates = higher shadow quality budget
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        container.appendChild(renderer.domElement);
+
+        // ── Subtle exponential fog for atmospheric depth ──────────────────────
+        scene.fog = new THREE.FogExp2(0x0a0e14, 0.11);
+
+        // ── High-fidelity Studio Environment Map (8-panel IBL) ───────────────
+        // Provides physically-correct image-based-lighting for PBR metals & glass
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+
+        const envScene = new THREE.Scene();
+        const envPanels = [
+            // [color-hex, width, height,  pos-x, pos-y, pos-z]
+            [0xffffff, 14, 14,   0,   12,  -6 ],   // overhead softbox (key)
+            [0xe8f0ff, 10, 10,   6,    6,   6 ],   // front-right key
+            [0x7ab0ff, 8,  8,   -6,    4,   5 ],   // left blue fill
+            [0xfff4e0, 6,  6,    6,    2,  -6 ],   // warm right rim
+            [0xffffff, 8,  8,   -6,    8,  -6 ],   // top-back bounce
+            [0x00e5ff, 4,  4,    0,    1,   8 ],   // cyan accent front
+            [0xffffff, 6,  6,    0,   -4,   0 ],   // ground bounce
+            [0xb0c4ff, 5,  5,   -8,    5,   0 ],   // side rim
+        ];
+        envPanels.forEach(([col, w, h, px, py, pz]) => {
+            const m = new THREE.MeshBasicMaterial({ color: col });
+            const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+            p.position.set(px, py, pz);
+            p.lookAt(0, 2, 0);
+            envScene.add(p);
+        });
+
+        const envRenderTarget = pmremGenerator.fromScene(envScene);
+        scene.environment = envRenderTarget.texture;
+        pmremGenerator.dispose();
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.07;
+        controls.enablePan = true;
+        controls.screenSpacePanning = true;
+        // Allow free exploration: full horizontal rotation, 10°–80° vertical
+        controls.minPolarAngle = 0.18;          // ~10° – don't go below floor
+        controls.maxPolarAngle = Math.PI * 0.82; // ~148° – prevents flipping
+        controls.minAzimuthAngle = -Infinity;    // unrestricted horizontal
+        controls.maxAzimuthAngle = Infinity;
+        controls.minDistance = 0.6;
+        controls.maxDistance = 6.0;
+        controls.target.set(0, 1.25, 0);
+
+        // ── Studio Lighting Rig ──────────────────────────────────────────────
+        // 1. Ambient base (kept low – env map provides the soft fill)
+        const ambLight = new THREE.AmbientLight(0x4060a0, 0.4);
+        scene.add(ambLight);
+
+        // 2. Key light (high-res 4096 shadow map, tight frustum around scene)
+        const keyLight = new THREE.DirectionalLight(0xfff8f0, 2.2);
+        keyLight.position.set(3, 5, 3.5);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width  = 4096;
+        keyLight.shadow.mapSize.height = 4096;
+        keyLight.shadow.bias = -0.0003;
+        keyLight.shadow.normalBias = 0.02;
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far  = 14;
+        keyLight.shadow.camera.left   = -3;
+        keyLight.shadow.camera.right  =  3;
+        keyLight.shadow.camera.top    =  4;
+        keyLight.shadow.camera.bottom = -1;
+        scene.add(keyLight);
+
+        // 3. Cool blue fill (left side – separates background from foreground)
+        const blueFill = new THREE.DirectionalLight(0x6090ff, 0.85);
+        blueFill.position.set(-4, 3, 3);
+        scene.add(blueFill);
+
+        // 4. Top clinical overhead (simulates workshop strip-light)
+        const topClinicalLight = new THREE.DirectionalLight(0xffffff, 1.1);
+        topClinicalLight.position.set(0, 6, 0.5);
+        scene.add(topClinicalLight);
+
+        // 5. Warm rim / back light (separates cylinders from dark background)
+        const rimLight = new THREE.DirectionalLight(0xffcc88, 1.4);
+        rimLight.position.set(-2, 2.5, -4);
+        scene.add(rimLight);
+
+        // 6. Cyan accent spot (echoes the cylinder glow onto the floor)
+        const cyanSpot = new THREE.PointLight(0x00e5ff, 0.6, 3.5, 2);
+        cyanSpot.position.set(0.1, 1.4, 0.5);
+        scene.add(cyanSpot);
+
+        /* =========================================================================
+           TEXTURES & STRIPED LABORATORY SLATTED WALL GENERATOR
+           ========================================================================= */
+        function createSlattedStripedTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Refined high-contrast industrial slate and dark aluminum horizontal slats
+            const numStripes = 8;
+            const h = canvas.height / numStripes;
+            for (let i = 0; i < numStripes; i++) {
+                ctx.fillStyle = (i % 2 === 0) ? '#1e293b' : '#0f172a';
+                ctx.fillRect(0, i * h, canvas.width, h);
+                // Crisp rail divider line
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(0, i * h + h - 2, canvas.width, 2);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(8, 6);
+            return tex;
+        }
+
+        const stripedWallTexture = createSlattedStripedTexture();
+
+        /* =========================================================================
+           MATERIAL REPOSITORY
+           ========================================================================= */
+        const materials = {
+            // Background Materials
+            slatAluminumSolid: new THREE.MeshStandardMaterial({ color: 0xdde3ea, roughness: 0.2, metalness: 0.85 }),
+            slatStripedClinical: new THREE.MeshStandardMaterial({ map: stripedWallTexture, roughness: 0.3, metalness: 0.05 }),
+            frameCream: new THREE.MeshStandardMaterial({ color: 0xe8e5dc, roughness: 0.5, metalness: 0.1 }),
+            floorDark: new THREE.MeshStandardMaterial({ color: 0x1a1f26, roughness: 0.7, metalness: 0.2 }),
+            
+            // Cylinder Components
+            cylinderBarrelSolid: new THREE.MeshPhysicalMaterial({ color: 0xd8dde3, roughness: 0.2, metalness: 0.95, clearcoat: 0.5, clearcoatRoughness: 0.1 }),
+            cylinderCapsBlack: new THREE.MeshPhysicalMaterial({ color: 0x11141a, roughness: 0.5, metalness: 0.8, clearcoat: 0.3, clearcoatRoughness: 0.4 }),
+            chromeRodSilver: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.08, metalness: 1.0, clearcoat: 1.0, clearcoatRoughness: 0.02 }),
+            
+            // Clear Acrylic / Glass Cylinder Barrel (High-Fidelity Transparent Mode)
+            cylinderClearAcrylic: new THREE.MeshPhysicalMaterial({
+                color: 0xe0f7ff,
+                metalness: 0.1,
+                roughness: 0.0,
+                transmission: 0.98,
+                thickness: 0.8,
+                transparent: true,
+                opacity: 1.0, // With transmission 1.0, opacity should usually be 1.0
+                ior: 1.5,
+                reflectivity: 0.9,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.0
+            }),
+
+            // Vibrant Translucent Cyan-Blue Pressurized Fluid Volume (Inside active chamber)
+            chamberFluidCyan: new THREE.MeshPhysicalMaterial({
+                color: 0x00e5ff,
+                roughness: 0.0,
+                metalness: 0.0,
+                transmission: 0.9,
+                transparent: true,
+                opacity: 0.8,
+                emissive: 0x00b4d8,
+                emissiveIntensity: 0.4,
+                ior: 1.33
+            }),
+
+            // Solid Gold-Colored Piston Head with Cyan Wear Strips & Center Magnet
+            pistonHeadSolidGold: new THREE.MeshPhysicalMaterial({
+                color: 0xf59e0b,
+                roughness: 0.15,
+                metalness: 0.95,
+                emissive: 0xd97706,
+                emissiveIntensity: 0.1,
+                clearcoat: 0.6,
+                clearcoatRoughness: 0.15
+            }),
+            pistonSealBandCyan: new THREE.MeshPhysicalMaterial({
+                color: 0x00e5ff,
+                roughness: 0.1,
+                metalness: 0.3,
+                emissive: 0x00e5ff,
+                emissiveIntensity: 0.8,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1
+            }),
+            pistonMagnetBrown: new THREE.MeshPhysicalMaterial({
+                color: 0x5c290a,
+                roughness: 0.4,
+                metalness: 0.7,
+                emissive: 0x3d1702,
+                emissiveIntensity: 0.1,
+                clearcoat: 0.3,
+                clearcoatRoughness: 0.4
+            }),
+
+            // Tool Couplers & Clamps
+            hexCouplerSilver: new THREE.MeshPhysicalMaterial({
+                color: 0xd1d5db,
+                roughness: 0.25,
+                metalness: 0.95,
+                clearcoat: 0.4,
+                clearcoatRoughness: 0.2
+            }),
+            clampJawBlack: new THREE.MeshPhysicalMaterial({
+                color: 0x1e293b,
+                roughness: 0.45,
+                metalness: 0.65,
+                clearcoat: 0.2,
+                clearcoatRoughness: 0.4
+            }),
+
+            // Lighter Blue Bubbles & Stream Flow Lines
+            bubbleLighterBlue: new THREE.MeshStandardMaterial({
+                color: 0xe0f2fe,
+                roughness: 0.1,
+                metalness: 0.1,
+                emissive: 0x38bdf8,
+                emissiveIntensity: 0.9,
+                transparent: true,
+                opacity: 0.85
+            }),
+            flowLineCyan: new THREE.MeshBasicMaterial({
+                color: 0x38bdf8,
+                transparent: true,
+                opacity: 0.8
+            }),
+            flowLineOrangePulse: new THREE.MeshBasicMaterial({
+                color: 0xff6d00,
+                transparent: true,
+                opacity: 0.95
+            }),
+
+            // Anvil, Stamp Head & Motor
+            stampHeadRed: new THREE.MeshPhysicalMaterial({ color: 0xdc2626, roughness: 0.25, metalness: 0.4, emissive: 0xef4444, emissiveIntensity: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
+            anvilDark: new THREE.MeshPhysicalMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.75, clearcoat: 0.3, clearcoatRoughness: 0.3 }),
+            gteeGoldBadge: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.15, metalness: 0.95, emissive: 0xd97706, emissiveIntensity: 0.2, clearcoat: 0.9, clearcoatRoughness: 0.1 }),
+
+            // Solenoid Valves
+            solenoidBodySolid: new THREE.MeshPhysicalMaterial({ color: 0xc4c9d0, roughness: 0.25, metalness: 0.9, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
+            solenoidCoilRed: new THREE.MeshPhysicalMaterial({ color: 0xd32f2f, roughness: 0.35, metalness: 0.2, clearcoat: 0.1, clearcoatRoughness: 0.4 }),
+            valveSpoolBrass: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.15, metalness: 0.98, clearcoat: 0.5, clearcoatRoughness: 0.1 }),
+            valveGlassTrans: new THREE.MeshPhysicalMaterial({ color: 0x93c5fd, metalness: 0.1, roughness: 0.05, transmission: 0.92, thickness: 0.5, transparent: true, opacity: 1.0, ior: 1.5, clearcoat: 1.0, clearcoatRoughness: 0.0 }),
+
+            // Limit Switches
+            switchBodyRed: new THREE.MeshPhysicalMaterial({ color: 0xd32f2f, roughness: 0.4, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4 }),
+            switchBaseBlack: new THREE.MeshPhysicalMaterial({ color: 0x181c22, roughness: 0.5, metalness: 0.3, clearcoat: 0.1, clearcoatRoughness: 0.5 }),
+            switchArmMetal: new THREE.MeshPhysicalMaterial({ color: 0xb0bec5, roughness: 0.2, metalness: 0.95, clearcoat: 0.8, clearcoatRoughness: 0.1 }),
+            switchRoller: new THREE.MeshPhysicalMaterial({ color: 0x1f2937, roughness: 0.4, metalness: 0.1 }),
+
+            // Compressor
+            compTankCream: new THREE.MeshPhysicalMaterial({ color: 0xf1ece1, roughness: 0.2, metalness: 0.2, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
+            compMotorSilver: new THREE.MeshPhysicalMaterial({ color: 0xced4da, roughness: 0.25, metalness: 0.95, clearcoat: 0.4, clearcoatRoughness: 0.2 }),
+            compFinsBlack: new THREE.MeshPhysicalMaterial({ color: 0x181c24, roughness: 0.5, metalness: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.4 }),
+            compBoxRed: new THREE.MeshPhysicalMaterial({ color: 0xc62828, roughness: 0.3, metalness: 0.2, clearcoat: 0.5, clearcoatRoughness: 0.3 }),
+            brassFitting: new THREE.MeshPhysicalMaterial({ color: 0xd4af37, roughness: 0.15, metalness: 0.98, clearcoat: 0.6, clearcoatRoughness: 0.1 }),
+
+            // Tubing & Wires
+            pneumaticOrangeSolid: new THREE.MeshPhysicalMaterial({ color: 0xff6d00, roughness: 0.2, metalness: 0.1, clearcoat: 0.9, clearcoatRoughness: 0.1 }),
+            pneumaticFlowActive: new THREE.MeshPhysicalMaterial({ color: 0xff6d00, roughness: 0.15, emissive: 0xff9100, emissiveIntensity: 0.8, clearcoat: 1.0, clearcoatRoughness: 0.1 }),
+            wireRed: new THREE.MeshPhysicalMaterial({ color: 0xef4444, roughness: 0.4, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4 }),
+            wireBlack: new THREE.MeshPhysicalMaterial({ color: 0x18181b, roughness: 0.4, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4 }),
+            wireYellow: new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4, metalness: 0.1 }),
+            wireNeonYellow: new THREE.MeshStandardMaterial({ color: 0xffeb3b, roughness: 0.2, emissive: 0xffd600, emissiveIntensity: 1.9 }),
+            wireNeonRed: new THREE.MeshStandardMaterial({ color: 0xff5252, roughness: 0.2, emissive: 0xff1744, emissiveIntensity: 1.9 }),
+
+            portMarkerOrange: new THREE.MeshStandardMaterial({ color: 0xff6d00, emissive: 0xff6d00, emissiveIntensity: 0.9 }),
+            portMarkerCyan: new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 0.9 })
+        };
+
+        // Text Texture Helper
+        function makeTextTex(text, bg="#ffffff", fg="#003366", w=512, h=128, sz=36, sub="") {
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = fg;
+            ctx.font = `bold ${sz}px "Inter", "Segoe UI", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, w / 2, sub ? h / 2 - 14 : h / 2);
+
+            if (sub) {
+                ctx.font = `bold ${Math.round(sz * 0.45)}px "JetBrains Mono", monospace`;
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(sub, w / 2, h / 2 + 20);
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Pressure Gauge Texture
+        function makeGaugeTex(maxVal = "1.0 MPa") {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(128, 128, 120, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#1e293b';
+            ctx.stroke();
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            for (let a = 0.75 * Math.PI; a <= 2.25 * Math.PI; a += (1.5 * Math.PI) / 10) {
+                const x1 = 128 + Math.cos(a) * 95;
+                const y1 = 128 + Math.sin(a) * 95;
+                const x2 = 128 + Math.cos(a) * 112;
+                const y2 = 128 + Math.sin(a) * 112;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(128, 128, 104, 0.75 * Math.PI + 0.3, 0.75 * Math.PI + 1.8);
+            ctx.stroke();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 18px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('PRESSURE', 128, 90);
+            ctx.font = 'bold 15px JetBrains Mono';
+            ctx.fillStyle = '#dc2626';
+            ctx.fillText(maxVal, 128, 175);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        /* =========================================================================
+           SCENE OBJECT REGISTRY
+           ========================================================================= */
+        const dynamicObjects = {
+            pistons: [],
+            fluidVolumes: [],
+            bubbleStreams: [],
+            limitArms: [],
+            limitHalos: [],
+            limitWires: [],
+            valveSpools: [],
+            compPistons: [],
+            motorRotor: null,
+            transMeshItems: [],
+            slatMeshes: [],
+            screenMarkers: []
+        };
+
+        // 1. Workbench Background (Swaps to flat 2D alternating pale blue & white stripes in Transparent Mode)
+        function buildWorkbenchScene() {
+            const group = new THREE.Group();
+
+            // ── Polished Reflective Floor ──────────────────────────────────────
+            // Semi-glossy dark metal, picks up PBR reflections from overhead lights
+            const floorMat = new THREE.MeshPhysicalMaterial({
+                color: 0x090c10,
+                roughness: 0.18,
+                metalness: 0.85,
+                clearcoat: 0.8,
+                clearcoatRoughness: 0.15,
+                envMapIntensity: 1.2
+            });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Frame Enclosure
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.75, 0.12), materials.frameCream);
+            frame.position.set(0, 1.25, -0.06);
+            frame.castShadow = true;
+            group.add(frame);
+
+            // GTEE Header Banner
+            const bannerTex = makeTextTex(
+                "GTEE   Basic pneumatic and hydraulic training device",
+                "#f8fafc", "#0f2c59", 1024, 128, 38, "P.N.: GTPHT-0002"
+            );
+            const banner = new THREE.Mesh(new THREE.BoxGeometry(2.36, 0.18, 0.14), new THREE.MeshStandardMaterial({ map: bannerTex, roughness: 0.3 }));
+            banner.position.set(0, 2.03, -0.05);
+            group.add(banner);
+
+            // Slatted Wall Section (Alternates to clean striped pattern in transparent mode)
+            const slatW = 1.72;
+            const slatH = 0.048;
+            const slatG = 0.012;
+            for (let i = 0; i < 24; i++) {
+                const slat = new THREE.Mesh(new THREE.BoxGeometry(slatW, slatH, 0.02), materials.slatAluminumSolid);
+                slat.position.set(-0.3, 0.45 + i * (slatH + slatG), 0.01);
+                slat.castShadow = true;
+                group.add(slat);
+                dynamicObjects.slatMeshes.push(slat);
+            }
+
+            // Right Electrical Panel
+            const elPanel = new THREE.Mesh(new THREE.BoxGeometry(0.56, 1.44, 0.03), new THREE.MeshStandardMaterial({ color: 0xeeece8, roughness: 0.35, metalness: 0.2 }));
+            elPanel.position.set(0.86, 1.17, 0.015);
+            group.add(elPanel);
+
+            scene.add(group);
+        }
+
+        // 2. Central Anvil Workpiece Block (Enlarged per schematic)
+        function buildCentralAnvil() {
+            const anvilGroup = new THREE.Group();
+            anvilGroup.position.set(-0.06, 1.46, 0.06);
+
+            // Anvil Base with ANVIL label
+            const anvilTex = makeTextTex("ANVIL", "#334155", "#cbd5e1", 256, 128, 48);
+            const block = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.15, 0.09), new THREE.MeshStandardMaterial({
+                color: 0x334155,
+                roughness: 0.3,
+                metalness: 0.8,
+                map: anvilTex
+            }));
+            anvilGroup.add(block);
+
+            // Top GTEE Gold Badge Plate with Star
+            const gteeTex = makeTextTex("★ GTEE", "#f59e0b", "#1e1b4b", 256, 128, 44);
+            const badge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.015), new THREE.MeshStandardMaterial({
+                color: 0xf59e0b,
+                roughness: 0.2,
+                metalness: 0.9,
+                map: gteeTex,
+                emissive: 0xd97706,
+                emissiveIntensity: 0.4
+            }));
+            badge.position.set(0, 0.095, 0.042);
+            anvilGroup.add(badge);
+
+            scene.add(anvilGroup);
+            dynamicObjects.screenMarkers.push({ id: "tag-anvil", pos3D: new THREE.Vector3(-0.06, 1.62, 0.06) });
+        }
+
+        // 3. Double-Acting Cylinders (Exact Match to Uploaded Schematic Design)
+        function buildCylinders() {
+            const configs = [
+                { id: "1A", name: "1A Clamping Cylinder", x: -0.66, y: 1.46, isStamping: false, tagId: "tag-cyl1" },
+                { id: "2A", name: "2A Stamping Cylinder", x: 0.48, y: 1.46, isStamping: true, tagId: "tag-cyl2" }
+            ];
+
+            const stampTex = makeTextTex("STAMP", "#dc2626", "#fef08a", 256, 128, 52);
+
+            // Specular reflection streak material for glass barrel
+            const glassHighlightMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.75
+            });
+
+            // Warm chamber volume material
+            const chamberWarmMat = new THREE.MeshBasicMaterial({
+                color: 0xffedd5,
+                transparent: true,
+                opacity: 0.38
+            });
+
+            // Outer cyan border wire/frame material
+            const glassFrameMat = new THREE.MeshBasicMaterial({
+                color: 0x00e5ff,
+                transparent: true,
+                opacity: 0.85
+            });
+
+            // Bolt pin material (white tie rod pins on 4 corners)
+            const boltPinMat = new THREE.MeshStandardMaterial({
+                color: 0xf8fafc,
+                roughness: 0.2,
+                metalness: 0.95
+            });
+
+            configs.forEach((cfg, idx) => {
+                const cGroup = new THREE.Group();
+                cGroup.position.set(cfg.x, cfg.y, 0.05);
+
+                const barrelLen = 0.38;
+                const barrelRadius = 0.038;
+                const strokeDist = 0.22;
+
+                // Mounting brackets on back
+                const bL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.02), materials.switchBaseBlack);
+                bL.position.set(-barrelLen / 2 + 0.02, 0, -0.01);
+                cGroup.add(bL);
+
+                const bR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.02), materials.switchBaseBlack);
+                bR.position.set(barrelLen / 2 - 0.02, 0, -0.01);
+                cGroup.add(bR);
+
+                // Black End Caps (Left & Right)
+                const capW = 0.045;
+                const capH = 0.096;
+                const capD = 0.088;
+                const capGeo = new THREE.BoxGeometry(capW, capH, capD);
+
+                const rearCap = new THREE.Mesh(capGeo, materials.cylinderCapsBlack);
+                rearCap.position.set(-barrelLen / 2 - capW / 2 + 0.01, 0, 0.035);
+                cGroup.add(rearCap);
+
+                const frontCap = new THREE.Mesh(capGeo, materials.cylinderCapsBlack);
+                frontCap.position.set(barrelLen / 2 + capW / 2 - 0.01, 0, 0.035);
+                cGroup.add(frontCap);
+
+                // 4 Corner White Bolt Pins protruding through the end caps
+                const cornerOffsets = [
+                    [-capH / 2 + 0.01, -capD / 2 + 0.01],
+                    [capH / 2 - 0.01, -capD / 2 + 0.01],
+                    [-capH / 2 + 0.01, capD / 2 - 0.01],
+                    [capH / 2 - 0.01, capD / 2 - 0.01]
+                ];
+
+                cornerOffsets.forEach(([dy, dz]) => {
+                    // Rear bolt pin
+                    const pinR = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.008, 0.008), boltPinMat);
+                    pinR.position.set(-barrelLen / 2 - capW / 2 + 0.002, dy, 0.035 + dz);
+                    cGroup.add(pinR);
+
+                    // Front bolt pin
+                    const pinF = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.008, 0.008), boltPinMat);
+                    pinF.position.set(barrelLen / 2 + capW / 2 - 0.002, dy, 0.035 + dz);
+                    cGroup.add(pinF);
+                });
+
+                // Clear Acrylic / Glass Cylinder Barrel
+                const barrelGeo = new THREE.CylinderGeometry(barrelRadius, barrelRadius, barrelLen - 0.02, 32);
+                barrelGeo.rotateZ(Math.PI / 2);
+                const barrelMesh = new THREE.Mesh(barrelGeo, materials.cylinderBarrelSolid);
+                barrelMesh.position.set(0, 0, 0.035);
+                cGroup.add(barrelMesh);
+
+                dynamicObjects.transMeshItems.push({
+                    mesh: barrelMesh,
+                    origMat: materials.cylinderBarrelSolid,
+                    transMat: materials.cylinderClearAcrylic
+                });
+
+                // Top Glossy Curved Glass Reflection Highlight Streak
+                const highlightGeo = new THREE.PlaneGeometry(barrelLen - 0.04, 0.012);
+                const highlightMesh = new THREE.Mesh(highlightGeo, glassHighlightMat);
+                highlightMesh.position.set(0, barrelRadius - 0.006, 0.035 + barrelRadius * 0.5);
+                highlightMesh.rotation.x = -Math.PI / 4;
+                highlightMesh.visible = false;
+                cGroup.add(highlightMesh);
+
+                dynamicObjects.transMeshItems.push({
+                    mesh: highlightMesh,
+                    origMat: { visible: false },
+                    transMat: { visible: true },
+                    isCustomVisible: true
+                });
+
+                // Cyan Outer Glass Casing Outline Frames (Top and Bottom)
+                for (let fy of [-barrelRadius, barrelRadius]) {
+                    const lineBar = new THREE.Mesh(new THREE.BoxGeometry(barrelLen, 0.0025, 0.0025), glassFrameMat);
+                    lineBar.position.set(0, fy, 0.035 + barrelRadius);
+                    lineBar.visible = false;
+                    cGroup.add(lineBar);
+                    dynamicObjects.transMeshItems.push({
+                        mesh: lineBar,
+                        origMat: { visible: false },
+                        transMat: { visible: true },
+                        isCustomVisible: true
+                    });
+                }
+
+                // 4 Stainless Tie Rods connecting caps
+                for (let dy of [-0.036, 0.036]) {
+                    for (let dz of [-0.036, 0.036]) {
+                        const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, barrelLen + 0.04, 8), materials.chromeRodSilver);
+                        tie.geometry.rotateZ(Math.PI / 2);
+                        tie.position.set(0, dy, 0.035 + dz);
+                        cGroup.add(tie);
+                    }
+                }
+
+                // Top Ports (Left Orange, Middle Cyan Oval, Right Orange)
+                const portRearTop = new THREE.Mesh(new THREE.CylinderGeometry(0.010, 0.010, 0.028, 12), materials.portMarkerOrange);
+                portRearTop.position.set(-barrelLen / 2 + 0.03, 0.056, 0.035);
+                cGroup.add(portRearTop);
+
+                const portMidTop = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.022, 12), materials.portMarkerCyan);
+                portMidTop.position.set(0, 0.050, 0.035);
+                cGroup.add(portMidTop);
+
+                const portFrontTop = new THREE.Mesh(new THREE.CylinderGeometry(0.010, 0.010, 0.028, 12), materials.portMarkerOrange);
+                portFrontTop.position.set(barrelLen / 2 - 0.03, 0.056, 0.035);
+                cGroup.add(portFrontTop);
+
+                // Bottom Ports (Left Orange, Right Orange)
+                const portRearBot = new THREE.Mesh(new THREE.CylinderGeometry(0.010, 0.010, 0.024, 12), materials.portMarkerOrange);
+                portRearBot.position.set(-barrelLen / 2 + 0.03, -0.054, 0.035);
+                cGroup.add(portRearBot);
+
+                const portFrontBot = new THREE.Mesh(new THREE.CylinderGeometry(0.010, 0.010, 0.024, 12), materials.portMarkerOrange);
+                portFrontBot.position.set(barrelLen / 2 - 0.03, -0.054, 0.035);
+                cGroup.add(portFrontBot);
+
+                // Rear Soft Warm Chamber Wash
+                const warmChamberGeo = new THREE.CylinderGeometry(barrelRadius - 0.004, barrelRadius - 0.004, barrelLen - 0.04, 24);
+                warmChamberGeo.rotateZ(Math.PI / 2);
+                const warmChamberMesh = new THREE.Mesh(warmChamberGeo, chamberWarmMat);
+                warmChamberMesh.position.set(0, 0, 0.035);
+                warmChamberMesh.visible = false;
+                cGroup.add(warmChamberMesh);
+
+                dynamicObjects.transMeshItems.push({
+                    mesh: warmChamberMesh,
+                    origMat: { visible: false },
+                    transMat: { visible: true },
+                    isCustomVisible: true
+                });
+
+                // Dynamic Pressurized Cyan Fluid Volume (in front of piston)
+                const fluidRadius = barrelRadius - 0.003;
+                const fluidGeo = new THREE.CylinderGeometry(fluidRadius, fluidRadius, 1.0, 24);
+                fluidGeo.rotateZ(Math.PI / 2);
+                const fluidMesh = new THREE.Mesh(fluidGeo, materials.chamberFluidCyan);
+                fluidMesh.visible = false;
+                cGroup.add(fluidMesh);
+
+                dynamicObjects.fluidVolumes.push({
+                    mesh: fluidMesh,
+                    baseX: -barrelLen / 2 + 0.03,
+                    radius: fluidRadius,
+                    idx: idx
+                });
+
+                // Dynamic Stream of Lighter Blue Bubbles inside pressurized fluid
+                const bubbleCount = 24;
+                const bubbleGroup = new THREE.Group();
+                bubbleGroup.visible = false;
+                const bubbleData = [];
+
+                for (let b = 0; b < bubbleCount; b++) {
+                    const bSize = 0.0025 + Math.random() * 0.0045;
+                    const bMesh = new THREE.Mesh(new THREE.SphereGeometry(bSize, 8, 8), materials.bubbleLighterBlue);
+                    bubbleGroup.add(bMesh);
+                    bubbleData.push({
+                        mesh: bMesh,
+                        relX: Math.random(),
+                        relY: (Math.random() - 0.5) * (fluidRadius * 1.5),
+                        relZ: (Math.random() - 0.5) * (fluidRadius * 1.5),
+                        speed: 0.35 + Math.random() * 0.75
+                    });
+                }
+                cGroup.add(bubbleGroup);
+                dynamicObjects.bubbleStreams.push({ group: bubbleGroup, bubbles: bubbleData, idx: idx });
+
+                // Internal Orange Airflow Line with Arrows < < < (for Cylinder 2A per schematic)
+                if (cfg.isStamping) {
+                    const flowGroup = new THREE.Group();
+                    flowGroup.position.set(-0.06, 0, 0.035);
+
+                    // Central orange supply line
+                    const lineMesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.004, 0.004), materials.flowLineOrangePulse);
+                    flowGroup.add(lineMesh);
+
+                    // Arrow cones pointing left < < < <
+                    for (let a = -2; a <= 2; a++) {
+                        const cone = new THREE.Mesh(new THREE.ConeGeometry(0.009, 0.016, 8), materials.flowLineOrangePulse);
+                        cone.rotation.z = Math.PI / 2;
+                        cone.position.set(a * 0.036, 0, 0);
+                        flowGroup.add(cone);
+
+                        // Bubble dots on top of the line
+                        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.004, 8, 8), materials.bubbleLighterBlue);
+                        dot.position.set(a * 0.036 + 0.012, 0.012, 0);
+                        flowGroup.add(dot);
+                    }
+                    flowGroup.visible = false;
+                    cGroup.add(flowGroup);
+                    dynamicObjects.transMeshItems.push({
+                        mesh: flowGroup,
+                        origMat: { visible: false },
+                        transMat: { visible: true },
+                        isCustomVisible: true
+                    });
+                }
+
+                // Piston Assembly: Silver Steel Rod + Solid Gold Piston Head + Cyan Seal Strips + Center Magnet
+                const pistonGroup = new THREE.Group();
+
+                const rodLen = 0.44;
+                const rodRadius = 0.013;
+                const rod = new THREE.Mesh(new THREE.CylinderGeometry(rodRadius, rodRadius, rodLen, 24), materials.chromeRodSilver);
+                rod.geometry.rotateZ(Math.PI / 2);
+                rod.position.set(rodLen / 2 - 0.05, 0, 0);
+                pistonGroup.add(rod);
+
+                // Solid Gold-Colored Piston Head Body
+                const pHead = new THREE.Mesh(new THREE.CylinderGeometry(barrelRadius - 0.002, barrelRadius - 0.002, 0.034, 24), materials.pistonHeadSolidGold);
+                pHead.geometry.rotateZ(Math.PI / 2);
+                pHead.position.set(-0.04, 0, 0);
+                pistonGroup.add(pHead);
+
+                // Two Cyan Seal / Wear Strips (Top & Bottom of head)
+                for (let rOff of [-0.012, 0.012]) {
+                    const rRing = new THREE.Mesh(new THREE.CylinderGeometry(barrelRadius - 0.0015, barrelRadius - 0.0015, 0.005, 24), materials.pistonSealBandCyan);
+                    rRing.geometry.rotateZ(Math.PI / 2);
+                    rRing.position.set(-0.04 + rOff, 0, 0);
+                    pistonGroup.add(rRing);
+                }
+
+                // Center Magnet Strip (Brown)
+                const magnetRing = new THREE.Mesh(new THREE.CylinderGeometry(barrelRadius - 0.0018, barrelRadius - 0.0018, 0.006, 24), materials.pistonMagnetBrown);
+                magnetRing.geometry.rotateZ(Math.PI / 2);
+                magnetRing.position.set(-0.04, 0, 0);
+                pistonGroup.add(magnetRing);
+
+                // Tool Tip Assembly: Silver Hex Coupler Nut + Working Head
+                const hexNut = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.024, 6), materials.hexCouplerSilver);
+                hexNut.geometry.rotateZ(Math.PI / 2);
+                hexNut.position.set(rodLen - 0.05, 0, 0);
+                pistonGroup.add(hexNut);
+
+                if (cfg.isStamping) {
+                    // Bright Red STAMP Head Block with Yellow "STAMP" Text
+                    const stampHead = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.065, 0.05), new THREE.MeshStandardMaterial({
+                        color: 0xdc2626,
+                        roughness: 0.2,
+                        metalness: 0.4,
+                        map: stampTex,
+                        emissive: 0xef4444,
+                        emissiveIntensity: 0.4
+                    }));
+                    stampHead.position.set(rodLen - 0.015, 0, 0);
+                    pistonGroup.add(stampHead);
+                } else {
+                    // Dark Black Clamping Jaw Head
+                    const clampHead = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.065, 0.05), materials.clampJawBlack);
+                    clampHead.position.set(rodLen - 0.02, 0, 0);
+                    pistonGroup.add(clampHead);
+                }
+
+                // Initial 100% Fully Extended
+                pistonGroup.position.set(strokeDist, 0, 0.035);
+                cGroup.add(pistonGroup);
+
+                dynamicObjects.pistons.push({ group: pistonGroup, strokeDist: strokeDist, idx: idx });
+                scene.add(cGroup);
+                dynamicObjects.screenMarkers.push({ id: cfg.tagId, pos3D: new THREE.Vector3(cfg.x, cfg.y + 0.14, 0.05) });
+            });
+        }
+
+        // 4. Industrial Limit Switches (SQ1, SQ2, SQ3, SQ4 aligned with new stroke)
+        function buildLimitSwitches() {
+            const swConfigs = [
+                { id: "SQ1", label: "1S1", x: -0.38, y: 1.26, z: 0.04, angle: 0, tripped: false },
+                { id: "SQ2", label: "1S2", x: -0.20, y: 1.26, z: 0.04, angle: 35, tripped: true },
+                { id: "SQ3", label: "2S1", x: 0.74, y: 1.26, z: 0.04, angle: 0, tripped: false },
+                { id: "SQ4", label: "2S2", x: 0.94, y: 1.26, z: 0.04, angle: 35, tripped: true }
+            ];
+
+            swConfigs.forEach(cfg => {
+                const sGroup = new THREE.Group();
+                sGroup.position.set(cfg.x, cfg.y, cfg.z);
+
+                const mount = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.10, 0.01), materials.switchBaseBlack);
+                sGroup.add(mount);
+
+                const base = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.048, 0.032), materials.switchBaseBlack);
+                base.position.set(0, -0.015, 0.018);
+                sGroup.add(base);
+
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.035, 0.032), materials.switchBodyRed);
+                head.position.set(0, 0.024, 0.018);
+                sGroup.add(head);
+
+                const armGroup = new THREE.Group();
+                armGroup.position.set(0, 0.032, 0.036);
+
+                const bar = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.10, 0.006), materials.switchArmMetal);
+                bar.position.set(0, 0.045, 0);
+                armGroup.add(bar);
+
+                const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 16), materials.switchRoller);
+                roller.geometry.rotateX(Math.PI / 2);
+                roller.position.set(0, 0.095, 0);
+                armGroup.add(roller);
+
+                if (cfg.tripped) {
+                    armGroup.rotation.z = -THREE.MathUtils.degToRad(cfg.angle);
+                }
+                sGroup.add(armGroup);
+                dynamicObjects.limitArms.push({ armGroup: armGroup, cfg: cfg });
+
+                const halo = new THREE.Mesh(new THREE.RingGeometry(0.018, 0.026, 24), new THREE.MeshBasicMaterial({
+                    color: 0x00e676,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: cfg.tripped ? 0.9 : 0
+                }));
+                halo.position.set(0, 0.125, 0.05);
+                sGroup.add(halo);
+                dynamicObjects.limitHalos.push({ mesh: halo, cfg: cfg });
+
+                scene.add(sGroup);
+            });
+        }
+
+        // 5. 5/2 Solenoid Valves
+        function buildSolenoidValves() {
+            const valveConfigs = [
+                { id: "V1", name: "5/2 Valve 1", x: -0.52, y: 0.62, tagId: "tag-v1" },
+                { id: "V2", name: "5/2 Valve 2", x: 0.45, y: 0.62, tagId: "tag-v2" }
+            ];
+
+            valveConfigs.forEach((cfg, idx) => {
+                const vGroup = new THREE.Group();
+                vGroup.position.set(cfg.x, cfg.y, 0.05);
+
+                const mount = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.012), materials.switchBaseBlack);
+                vGroup.add(mount);
+
+                const bodyLen = 0.11;
+                const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(bodyLen, 0.048, 0.045), materials.solenoidBodySolid);
+                bodyMesh.position.set(0, 0, 0.03);
+                vGroup.add(bodyMesh);
+
+                dynamicObjects.transMeshItems.push({
+                    mesh: bodyMesh,
+                    origMat: materials.solenoidBodySolid,
+                    transMat: materials.valveGlassTrans
+                });
+
+                for (let px of [-0.028, 0.028]) {
+                    const pt = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.02, 12), materials.brassFitting);
+                    pt.position.set(px, 0.032, 0.03);
+                    vGroup.add(pt);
+                }
+                for (let px of [-0.035, 0, 0.035]) {
+                    const pb = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.02, 12), materials.brassFitting);
+                    pb.position.set(px, -0.032, 0.03);
+                    vGroup.add(pb);
+                }
+
+                for (let side of [-1, 1]) {
+                    const coil = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.046, 0.042), materials.solenoidCoilRed);
+                    coil.position.set(side * (bodyLen / 2 + 0.022), 0, 0.03);
+                    vGroup.add(coil);
+                }
+
+                const spoolGroup = new THREE.Group();
+                const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.09, 16), materials.chromeRodSilver);
+                shaft.geometry.rotateZ(Math.PI / 2);
+                spoolGroup.add(shaft);
+
+                for (let s = -2; s <= 2; s++) {
+                    const land = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.01, 16), materials.valveSpoolBrass);
+                    land.geometry.rotateZ(Math.PI / 2);
+                    land.position.set(s * 0.018, 0, 0);
+                    spoolGroup.add(land);
+                }
+                spoolGroup.position.set(0.015, 0, 0.03);
+                vGroup.add(spoolGroup);
+                dynamicObjects.valveSpools.push({ group: spoolGroup, idx: idx });
+
+                scene.add(vGroup);
+                dynamicObjects.screenMarkers.push({ id: cfg.tagId, pos3D: new THREE.Vector3(cfg.x, cfg.y + 0.09, 0.05) });
+            });
+        }
+
+        // 6. FRL Unit (Filter-Regulator-Lubricator Trio)
+        function buildFRLUnit() {
+            const frlGroup = new THREE.Group();
+            frlGroup.position.set(-0.95, 0.78, 0.05);
+
+            const plate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.015), materials.cylinderCapsBlack);
+            frlGroup.add(plate);
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.06), materials.solenoidBodySolid);
+            body.position.set(0, 0.02, 0.035);
+            frlGroup.add(body);
+
+            const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.02, 24), new THREE.MeshStandardMaterial({ map: makeGaugeTex("1.0 MPa") }));
+            dial.geometry.rotateX(Math.PI / 2);
+            dial.position.set(0, 0.02, 0.075);
+            frlGroup.add(dial);
+
+            for (let i = 0; i < 2; i++) {
+                const x = (i === 0) ? -0.06 : 0.06;
+                const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 0.09, 20), materials.cylinderClearAcrylic);
+                bowl.position.set(x, -0.045, 0.035);
+                frlGroup.add(bowl);
+            }
+
+            scene.add(frlGroup);
+            dynamicObjects.screenMarkers.push({ id: "tag-frl", pos3D: new THREE.Vector3(-0.95, 0.90, 0.05) });
+        }
+
+        // 7. 400W DC Motor & Optical Encoder Module
+        function buildDCMotorAndEncoder() {
+            const motorGroup = new THREE.Group();
+            motorGroup.position.set(-0.05, 0.35, 0.05);
+
+            const housing = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.14, 0.08), materials.solenoidBodySolid);
+            housing.position.set(0, 0, 0.04);
+            motorGroup.add(housing);
+
+            const motorTex = makeTextTex("400W DC MOTOR", "#f8fafc", "#0f172a", 512, 128, 42, "OPTICAL ENCODER 1000P/R");
+            const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.10), new THREE.MeshStandardMaterial({ map: motorTex }));
+            labelMesh.position.set(-0.03, 0, 0.082);
+            motorGroup.add(labelMesh);
+
+            const encHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 24), materials.switchBaseBlack);
+            encHousing.geometry.rotateX(Math.PI / 2);
+            encHousing.position.set(0.09, 0, 0.075);
+            motorGroup.add(encHousing);
+
+            const discGroup = new THREE.Group();
+            discGroup.position.set(0.09, 0, 0.092);
+
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.004, 24), materials.chromeRodSilver);
+            disc.geometry.rotateX(Math.PI / 2);
+            discGroup.add(disc);
+
+            for (let s = 0; s < 8; s++) {
+                const slot = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.025, 0.006), materials.switchBaseBlack);
+                slot.position.set(Math.cos(s * Math.PI / 4) * 0.024, Math.sin(s * Math.PI / 4) * 0.024, 0);
+                discGroup.add(slot);
+            }
+            motorGroup.add(discGroup);
+            dynamicObjects.motorRotor = discGroup;
+
+            scene.add(motorGroup);
+            dynamicObjects.screenMarkers.push({ id: "tag-motor", pos3D: new THREE.Vector3(-0.05, 0.46, 0.05) });
+        }
+
+        // 8. OUTSTANDING Silent Compressor
+        function buildCompressor() {
+            const compGroup = new THREE.Group();
+            compGroup.position.set(0.85, 0.32, 0.45);
+
+            const tankGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.55, 32);
+            tankGeo.rotateZ(Math.PI / 2);
+            const tankTex = makeTextTex("OUTSTANDING", "#f5f0e6", "#0f2c59", 512, 128, 54, "SILENT OIL-FREE COMPRESSOR");
+            const tank = new THREE.Mesh(tankGeo, new THREE.MeshStandardMaterial({ color: 0xf1ece1, roughness: 0.35, metalness: 0.15, map: tankTex }));
+            tank.castShadow = true;
+            compGroup.add(tank);
+
+            const domeL = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), materials.compTankCream);
+            domeL.rotation.z = Math.PI / 2;
+            domeL.position.set(-0.275, 0, 0);
+            compGroup.add(domeL);
+
+            const domeR = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), materials.compTankCream);
+            domeR.rotation.z = -Math.PI / 2;
+            domeR.position.set(0.275, 0, 0);
+            compGroup.add(domeR);
+
+            for (let i = 0; i < 2; i++) {
+                const xOff = (i === 0) ? -0.12 : 0.08;
+                const mHead = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.14, 24), materials.compMotorSilver);
+                mHead.position.set(xOff, 0.26, 0);
+                compGroup.add(mHead);
+
+                for (let f = 0; f < 5; f++) {
+                    const fin = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.006, 24), materials.compFinsBlack);
+                    fin.position.set(xOff, 0.22 + f * 0.018, 0);
+                    compGroup.add(fin);
+                }
+
+                const pMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.025, 16), materials.pistonHeadSolidGold);
+                pMesh.position.set(xOff, 0.26, 0);
+                pMesh.visible = false;
+                compGroup.add(pMesh);
+                dynamicObjects.compPistons.push(pMesh);
+                dynamicObjects.transMeshItems.push({ mesh: mHead, origMat: materials.compMotorSilver, transMat: materials.cylinderClearAcrylic });
+            }
+
+            const sBox = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.08), materials.compBoxRed);
+            sBox.position.set(0.24, 0.22, 0.06);
+            compGroup.add(sBox);
+
+            const gMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 24), new THREE.MeshStandardMaterial({ map: makeGaugeTex("1.6 MPa") }));
+            gMesh.geometry.rotateX(Math.PI / 2);
+            gMesh.position.set(0.26, 0.29, 0.11);
+            compGroup.add(gMesh);
+
+            scene.add(compGroup);
+
+            buildCoilHose(new THREE.Vector3(1.03, 0.36, 0.59), new THREE.Vector3(-0.95, 0.72, 0.08));
+        }
+
+        function buildCoilHose(startPt, endPt) {
+            const numTurns = 18;
+            const points = [];
+            points.push(startPt);
+            points.push(new THREE.Vector3(startPt.x + 0.05, startPt.y - 0.1, startPt.z));
+
+            const coilStart = new THREE.Vector3(startPt.x - 0.1, 0.08, startPt.z - 0.1);
+            const coilEnd = new THREE.Vector3(0.1, 0.06, 0.15);
+            const totalSteps = numTurns * 16;
+            
+            for (let i = 0; i <= totalSteps; i++) {
+                const t = i / totalSteps;
+                const center = new THREE.Vector3().lerpVectors(coilStart, coilEnd, t);
+                const angle = t * numTurns * Math.PI * 2;
+                const x = center.x + Math.sin(angle) * 0.045 * (0.8 + 0.4 * Math.sin(t * Math.PI));
+                const y = center.y + Math.cos(angle) * 0.045;
+                const z = center.z + (Math.sin(angle * 0.5) * 0.01);
+                points.push(new THREE.Vector3(x, y, z));
+            }
+
+            points.push(new THREE.Vector3(-0.8, 0.12, 0.1));
+            points.push(new THREE.Vector3(-0.95, 0.45, 0.08));
+            points.push(endPt);
+
+            const curve = new THREE.CatmullRomCurve3(points);
+            const hose = new THREE.Mesh(new THREE.TubeGeometry(curve, 180, 0.009, 10, false), materials.pneumaticOrangeSolid);
+            scene.add(hose);
+            dynamicObjects.transMeshItems.push({ mesh: hose, origMat: materials.pneumaticOrangeSolid, transMat: materials.pneumaticFlowActive });
+        }
+
+        // 9. Pneumatic Tubing Routes
+        function buildPneumaticTubing() {
+            const routes = [
+                [new THREE.Vector3(-0.90, 0.78, 0.08), new THREE.Vector3(-0.85, 0.50, 0.12), new THREE.Vector3(-0.65, 0.38, 0.14), new THREE.Vector3(-0.52, 0.58, 0.08)],
+                [new THREE.Vector3(-0.88, 0.76, 0.08), new THREE.Vector3(-0.60, 0.28, 0.15), new THREE.Vector3(0.05, 0.24, 0.16), new THREE.Vector3(0.45, 0.58, 0.08)],
+                [new THREE.Vector3(-0.55, 0.65, 0.08), new THREE.Vector3(-0.70, 0.90, 0.16), new THREE.Vector3(-0.82, 1.25, 0.14), new THREE.Vector3(-0.79, 1.52, 0.08)],
+                [new THREE.Vector3(-0.49, 0.65, 0.08), new THREE.Vector3(-0.44, 0.95, 0.15), new THREE.Vector3(-0.48, 1.35, 0.12), new THREE.Vector3(-0.51, 1.52, 0.08)],
+                [new THREE.Vector3(0.42, 0.65, 0.08), new THREE.Vector3(0.28, 0.95, 0.16), new THREE.Vector3(0.23, 1.30, 0.14), new THREE.Vector3(0.24, 1.52, 0.08)],
+                [new THREE.Vector3(0.48, 0.65, 0.08), new THREE.Vector3(0.55, 0.95, 0.15), new THREE.Vector3(0.55, 1.35, 0.12), new THREE.Vector3(0.52, 1.52, 0.08)]
+            ];
+
+            routes.forEach(pts => {
+                const curve = new THREE.CatmullRomCurve3(pts);
+                const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.007, 10, false), materials.pneumaticOrangeSolid);
+                scene.add(tube);
+                dynamicObjects.transMeshItems.push({ mesh: tube, origMat: materials.pneumaticOrangeSolid, transMat: materials.pneumaticFlowActive });
+            });
+        }
+
+        // 10. Electrical Wire Paths
+        function buildElectricalWires() {
+            const routes = [
+                { pts: [new THREE.Vector3(0.72, 1.10, 0.05), new THREE.Vector3(0.40, 0.85, 0.18), new THREE.Vector3(-0.10, 0.68, 0.16), new THREE.Vector3(-0.48, 0.62, 0.08)], mat: materials.wireRed, glow: materials.wireNeonRed },
+                { pts: [new THREE.Vector3(0.72, 1.02, 0.05), new THREE.Vector3(0.58, 0.80, 0.14), new THREE.Vector3(0.49, 0.62, 0.08)], mat: materials.wireRed, glow: materials.wireNeonRed },
+                { pts: [new THREE.Vector3(0.76, 0.98, 0.05), new THREE.Vector3(0.42, 0.65, 0.16), new THREE.Vector3(-0.05, 0.58, 0.14), new THREE.Vector3(-0.56, 0.62, 0.08)], mat: materials.wireBlack, glow: materials.wireBlack },
+                { pts: [new THREE.Vector3(-0.32, 1.25, 0.05), new THREE.Vector3(-0.15, 0.95, 0.18), new THREE.Vector3(0.20, 0.80, 0.20), new THREE.Vector3(0.68, 0.92, 0.05)], mat: materials.wireYellow, glow: materials.wireNeonYellow, isLimit: true },
+                { pts: [new THREE.Vector3(0.71, 1.25, 0.05), new THREE.Vector3(0.72, 1.05, 0.14), new THREE.Vector3(0.70, 0.84, 0.05)], mat: materials.wireYellow, glow: materials.wireNeonYellow, isLimit: true }
+            ];
+
+            routes.forEach(w => {
+                const curve = new THREE.CatmullRomCurve3(w.pts);
+                const wire = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.0035, 8, false), w.mat);
+                scene.add(wire);
+                dynamicObjects.limitWires.push({ mesh: wire, origMat: w.mat, glowMat: w.glow, isLimit: !!w.isLimit });
+            });
+        }
+
+        /* =========================================================================
+           SIMULATION PHYSICS & DYNAMICS LOOP
+           ========================================================================= */
+        function updateSimulation(dt) {
+            // Compressor charging
+            if (SIM.compressorOn && SIM.tankPressure < 0.85) {
+                SIM.tankPressure += 0.02 * dt;
+            } else if (!SIM.compressorOn && SIM.tankPressure > 0) {
+                SIM.tankPressure -= 0.003 * dt;
+            }
+
+            // Motor Rotation
+            if (SIM.power24V && SIM.motorRPM > 0 && dynamicObjects.motorRotor) {
+                const rps = (SIM.motorRPM / 60) * Math.PI * 2;
+                dynamicObjects.motorRotor.rotation.z += rps * dt;
+            }
+
+            // Compressor Piston stroke
+            if (SIM.compressorOn) {
+                const t = Date.now() * 0.028;
+                dynamicObjects.compPistons.forEach((p, idx) => {
+                    p.position.y = 0.26 + Math.sin(t + idx * Math.PI) * 0.025;
+                });
+            }
+
+            // Cylinder Motion, Fluid Volume Resizing & Bubble Stream Dynamics
+            SIM.cylinders.forEach((cyl, idx) => {
+                if (cyl.pos !== cyl.target) {
+                    const step = cyl.speed * dt;
+                    if (Math.abs(cyl.pos - cyl.target) <= step) {
+                        cyl.pos = cyl.target;
+                        playAirPuff(0.28, 920);
+                    } else {
+                        cyl.pos += (cyl.target > cyl.pos) ? step : -step;
+                    }
+
+                    const pObj = dynamicObjects.pistons[idx];
+                    if (pObj) {
+                        pObj.group.position.x = cyl.pos * pObj.strokeDist;
+                    }
+                }
+
+                // Dynamic Internal Cyan Fluid Volume Scaling (Expands as piston extends)
+                const fObj = dynamicObjects.fluidVolumes[idx];
+                if (fObj) {
+                    const strokeDist = 0.22;
+                    const chamberLength = Math.max(0.02, cyl.pos * strokeDist + 0.05);
+                    fObj.mesh.scale.set(chamberLength, 1, 1);
+                    fObj.mesh.position.set(-0.19 + chamberLength / 2, 0, 0.035);
+                }
+
+                // Animate Stream of Lighter Blue Bubbles inside active fluid volume
+                const bStream = dynamicObjects.bubbleStreams[idx];
+                if (bStream && bStream.group.visible) {
+                    const chamberLen = Math.max(0.02, cyl.pos * 0.22 + 0.05);
+                    const startX = -0.19;
+                    bStream.bubbles.forEach(b => {
+                        b.relX += b.speed * dt;
+                        if (b.relX > 1.0) b.relX = 0.0;
+                        b.mesh.position.set(startX + b.relX * chamberLen, b.relY, 0.035 + b.relZ);
+                    });
+                }
+            });
+
+            // Limit Switch Tripping Evaluation
+            SIM.limitSwitches.forEach((sw, idx) => {
+                const cyl = SIM.cylinders[sw.cylIdx];
+                let isTrippedNow = sw.isMin ? (cyl.pos <= sw.trigPos) : (cyl.pos >= sw.trigPos);
+
+                if (isTrippedNow !== sw.tripped) {
+                    sw.tripped = isTrippedNow;
+                    if (sw.tripped) playRelayClick();
+                    logEvent(`${sw.id} (${sw.label}) ${sw.tripped ? 'TRIPPED & LIVE' : 'RELEASED'}`, sw.tripped ? 'warn' : 'info');
+                }
+
+                const targetA = sw.tripped ? 35 : 0;
+                sw.angle += (targetA - sw.angle) * 0.25;
+
+                const aObj = dynamicObjects.limitArms[idx];
+                if (aObj) {
+                    aObj.armGroup.rotation.z = -THREE.MathUtils.degToRad(sw.angle);
+                }
+
+                const hObj = dynamicObjects.limitHalos[idx];
+                if (hObj) {
+                    hObj.mesh.material.opacity = (sw.tripped && SIM.mode !== 'physical') ? 0.9 : 0;
+                }
+            });
+
+            // Valve Spool Shifts
+            SIM.valves.forEach((v, idx) => {
+                const targetX = (v.state === 'A') ? 0.015 : -0.015;
+                const spObj = dynamicObjects.valveSpools[idx];
+                if (spObj) {
+                    spObj.group.position.x += (targetX - spObj.group.position.x) * 0.22;
+                }
+            });
+
+            updateFloatingTags();
+            updateTelemetryHUD();
+            runIndustrialSequence(dt);
+        }
+
+        // Industrial Auto Sequence: 1A+ -> 2A+ (Stamp) -> 2A- -> 1A-
+        function runIndustrialSequence(dt) {
+            if (!SIM.autoSequence) return;
+            SIM.seqTimer += dt;
+            if (SIM.seqTimer < 1.1) return;
+            SIM.seqTimer = 0;
+
+            const seqBadge = document.getElementById('seq-step-name');
+
+            if (SIM.seqStep === 0) {
+                setValveDirect(0, 'A');
+                if (seqBadge) seqBadge.innerText = "STEP 1: 1A+ (CLAMPING)";
+                SIM.seqStep = 1;
+            } else if (SIM.seqStep === 1) {
+                setValveDirect(1, 'A');
+                if (seqBadge) seqBadge.innerText = "STEP 2: 2A+ (STAMPING ANVIL)";
+                SIM.seqStep = 2;
+            } else if (SIM.seqStep === 2) {
+                setValveDirect(1, 'B');
+                if (seqBadge) seqBadge.innerText = "STEP 3: 2A- (RETRACT STAMP)";
+                SIM.seqStep = 3;
+            } else {
+                setValveDirect(0, 'B');
+                if (seqBadge) seqBadge.innerText = "STEP 4: 1A- (UNCLAMP COMPLETE)";
+                SIM.seqStep = 0;
+            }
+        }
+
+        function setValveDirect(vIdx, state) {
+            const v = SIM.valves[vIdx];
+            if (v.state === state) return;
+            v.state = state;
+            v.solA = (state === 'A');
+            v.solB = (state === 'B');
+            SIM.cylinders[vIdx].target = (state === 'A') ? 1.0 : 0.0;
+            _shadowNeedsUpdate = true; // repaint shadows when pistons move
+            playAirPuff(0.35, 760);
+            playRelayClick();
+            logEvent(`${v.name} &rarr; State [${state}] (Target: ${state === 'A' ? '100% EXTEND' : '0% RETRACT'})`, 'success');
+        }
+
+        /* =========================================================================
+           HIGH-FIDELITY TRANSPARENT MODE & RENDERING CONTROLLER
+           ========================================================================= */
+        function setRenderMode(modeName) {
+            SIM.mode = modeName;
+            logEvent(`Visual Mode Switched to: [${modeName.toUpperCase()}]`, 'info');
+
+            document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+            if (modeName === 'physical') document.getElementById('btn-mode-phys').classList.add('active');
+            else if (modeName === 'working') document.getElementById('btn-mode-work').classList.add('active');
+            else document.getElementById('btn-mode-trans').classList.add('active');
+
+            // 1. Transparent Clear Acrylic / Glass Cylinder Barrels & Internal Flow Graphics
+            dynamicObjects.transMeshItems.forEach(item => {
+                if (item.isCustomVisible) {
+                    item.mesh.visible = (modeName === 'transparent');
+                } else {
+                    item.mesh.material = (modeName === 'transparent') ? item.transMat : item.origMat;
+                }
+            });
+
+            // 2. Translucent Cyan Fluid Volume & Lighter Blue Bubble Streams
+            dynamicObjects.fluidVolumes.forEach(f => {
+                f.mesh.visible = (modeName === 'transparent');
+            });
+
+            dynamicObjects.bubbleStreams.forEach(b => {
+                b.group.visible = (modeName === 'transparent');
+            });
+
+            // 3. Background Slatted Wall Pattern (Swaps to clean striped laboratory pattern in Transparent Mode)
+            dynamicObjects.slatMeshes.forEach(slat => {
+                if (modeName === 'transparent') {
+                    slat.material = materials.slatStripedClinical;
+                } else {
+                    slat.material = materials.slatAluminumSolid;
+                }
+            });
+
+            // 4. High-Contrast Studio Lighting & Deep Dark Engineering Background
+            _shadowNeedsUpdate = true; // recompute shadows on mode change
+            if (modeName === 'transparent') {
+                ambLight.intensity = 0.5;
+                keyLight.intensity = 1.8;
+                topClinicalLight.intensity = 1.2;
+                rimLight.intensity = 1.6;
+                cyanSpot.intensity = 1.0;
+                scene.background = new THREE.Color(0x0e131a);
+
+                // Auto-frame cylinders in clear front technical view
+                switchCamera('cylinders');
+            } else {
+                ambLight.intensity = 0.4;
+                keyLight.intensity = 2.2;
+                topClinicalLight.intensity = 1.1;
+                rimLight.intensity = 1.4;
+                cyanSpot.intensity = 0.6;
+                scene.background = new THREE.Color(0x0e131a);
+            }
+
+            // 5. Compressor Internal Pistons
+            dynamicObjects.compPistons.forEach(p => {
+                p.visible = (modeName === 'transparent');
+            });
+
+            // 6. Electrical Wire Illumination
+            dynamicObjects.limitWires.forEach(w => {
+                if (modeName === 'working' || modeName === 'transparent') {
+                    w.mesh.material = w.glowMat;
+                } else {
+                    w.mesh.material = w.origMat;
+                }
+            });
+
+            // 7. Limit Switch Halos
+            dynamicObjects.limitHalos.forEach((h, idx) => {
+                const sw = SIM.limitSwitches[idx];
+                h.mesh.material.opacity = (sw.tripped && modeName !== 'physical') ? 0.9 : 0;
+            });
+
+            // 8. Floating Callout Labels
+            document.querySelectorAll('.marker-tag').forEach(tag => {
+                tag.style.opacity = (modeName === 'transparent') ? '1' : '0';
+            });
+        }
+
+        /* =========================================================================
+           UI & FLOATING LABELS PROJECTOR
+           ========================================================================= */
+        function updateFloatingTags() {
+            if (SIM.mode !== 'transparent') return;
+
+            const tempV = new THREE.Vector3();
+            dynamicObjects.screenMarkers.forEach(m => {
+                const el = document.getElementById(m.id);
+                if (!el) return;
+
+                tempV.copy(m.pos3D);
+                tempV.project(camera);
+
+                if (tempV.z > 1) {
+                    el.style.display = 'none';
+                    return;
+                }
+
+                el.style.display = 'block';
+                const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-(tempV.y * 0.5) + 0.5) * window.innerHeight;
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+            });
+        }
+
+        function updateTelemetryHUD() {
+            setLED('led-sq1', SIM.limitSwitches[0].tripped, 'active-yellow');
+            setLED('led-sq2', SIM.limitSwitches[1].tripped, 'active-yellow');
+            setLED('led-sq3', SIM.limitSwitches[2].tripped, 'active-yellow');
+            setLED('led-sq4', SIM.limitSwitches[3].tripped, 'active-yellow');
+
+            setLED('led-sol1a', SIM.valves[0].solA && SIM.power24V, 'active-red');
+            setLED('led-sol1b', SIM.valves[0].solB && SIM.power24V, 'active-red');
+            setLED('led-sol2a', SIM.valves[1].solA && SIM.power24V, 'active-red');
+            setLED('led-sol2b', SIM.valves[1].solB && SIM.power24V, 'active-red');
+        }
+
+        function setLED(id, state, activeCls) {
+            const el = document.getElementById(id);
+            if (el) el.className = state ? `led-dot ${activeCls}` : 'led-dot';
+        }
+
+        function actuateCylinders(act) {
+            if (act === 'extend') {
+                setValveDirect(0, 'A');
+                setValveDirect(1, 'A');
+            } else {
+                setValveDirect(0, 'B');
+                setValveDirect(1, 'B');
+            }
+        }
+
+        function toggleAutoSequence() {
+            SIM.autoSequence = !SIM.autoSequence;
+            const btn = document.getElementById('btn-seq-auto');
+            if (btn) {
+                btn.innerText = SIM.autoSequence ? "STOP AUTO SEQUENCE" : "START 1A+/2A+/2A-/1A- SEQUENCE";
+                btn.className = SIM.autoSequence ? "act-btn btn-red" : "act-btn btn-purple";
+            }
+            logEvent(`Industrial Automation Sequence: ${SIM.autoSequence ? 'RUNNING' : 'STOPPED'}`, 'info');
+        }
+
+        function toggleCompressor() {
+            SIM.compressorOn = !SIM.compressorOn;
+            const btn = document.getElementById('btn-comp-power');
+            if (btn) {
+                btn.innerText = SIM.compressorOn ? "COMPRESSOR: ON" : "COMPRESSOR: OFF";
+                btn.className = SIM.compressorOn ? "act-btn btn-green" : "act-btn btn-red";
+            }
+            logEvent(`Compressor Motor: ${SIM.compressorOn ? 'RUNNING (Charging Tank)' : 'STOPPED'}`, SIM.compressorOn ? 'info' : 'warn');
+        }
+
+        function toggleDCPower() {
+            SIM.power24V = !SIM.power24V;
+            const btn = document.getElementById('btn-dc-power');
+            if (btn) {
+                btn.innerText = SIM.power24V ? "24V BUS: ON" : "24V BUS: OFF";
+                btn.className = SIM.power24V ? "act-btn btn-green" : "act-btn btn-red";
+            }
+            playRelayClick();
+            logEvent(`Main 24V DC Bus: ${SIM.power24V ? 'LIVE' : 'ISOLATED'}`, SIM.power24V ? 'success' : 'err');
+        }
+
+        function setFrlVal(val) {
+            SIM.frlPressure = parseFloat(val);
+            document.getElementById('lbl-pres').innerText = `${SIM.frlPressure.toFixed(2)} MPa (${(SIM.frlPressure * 10).toFixed(1)} bar)`;
+        }
+
+        function setMotorRPM(val) {
+            SIM.motorRPM = parseInt(val);
+            document.getElementById('lbl-rpm').innerText = `${SIM.motorRPM} RPM`;
+        }
+
+        function toggleAudio() {
+            SIM.sound = !SIM.sound;
+            document.getElementById('sound-icon').innerHTML = SIM.sound ? "&#128266;" : "&#128263;";
+            document.getElementById('sound-text').innerText = SIM.sound ? "Sound ON" : "Sound MUTE";
+        }
+
+        function resetView() {
+            switchCamera('workbench');
+        }
+
+        function switchCamera(preset, btnEl) {
+            document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+            if (btnEl && btnEl.classList) {
+                btnEl.classList.add('active');
+            } else {
+                const buttons = document.querySelectorAll('.cam-grid .cam-btn');
+                const presetMap = { 'workbench': 0, 'cylinders': 1, 'valves': 2, 'compressor': 3, 'motor': 4, 'electric': 5 };
+                const idx = presetMap[preset];
+                if (idx !== undefined && buttons[idx]) {
+                    buttons[idx].classList.add('active');
+                }
+            }
+
+            let pos  = new THREE.Vector3(0, 1.25, 2.65);
+            let look = new THREE.Vector3(0, 1.25, 0);
+
+            if (preset === 'workbench') {
+                pos.set(0, 1.6, 2.9);
+                look.set(0, 1.0, 0);
+            } else if (preset === 'cylinders') {
+                pos.set(-0.09, 1.6, 1.45);
+                look.set(-0.09, 1.46, 0.05);
+            } else if (preset === 'valves') {
+                pos.set(-0.05, 0.9, 1.35);
+                look.set(-0.05, 0.62, 0.05);
+            } else if (preset === 'compressor') {
+                pos.set(1.1, 0.65, 1.4);
+                look.set(0.85, 0.35, 0.45);
+            } else if (preset === 'motor') {
+                pos.set(-0.05, 0.55, 1.15);
+                look.set(-0.05, 0.35, 0.05);
+            } else if (preset === 'electric') {
+                pos.set(0.92, 1.35, 1.45);
+                look.set(0.86, 1.17, 0.05);
+            }
+
+            _shadowNeedsUpdate = true;
+
+            // Smoothly tween camera position AND orbital pivot point together
+            new TWEEN.Tween(camera.position)
+                .to({ x: pos.x, y: pos.y, z: pos.z }, 950)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+            new TWEEN.Tween(controls.target)
+                .to({ x: look.x, y: look.y, z: look.z }, 950)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .onUpdate(() => controls.update())
+                .start();
+        }
+
+        /* =========================================================================
+           INITIALIZATION & RENDER LOOP
+           ========================================================================= */
+        function initApp() {
+            buildWorkbenchScene();
+            buildCentralAnvil();
+            buildCylinders();
+            buildLimitSwitches();
+            buildSolenoidValves();
+            buildFRLUnit();
+            buildDCMotorAndEncoder();
+            buildCompressor();
+            buildPneumaticTubing();
+            buildElectricalWires();
+
+            logEvent("GTEE GTPHT-0002 Web App Initialized", "info");
+            logEvent("High-Fidelity Transparent Fluid Dynamics Ready", "success");
+
+            window.addEventListener('resize', onResize, false);
+        }
+
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        const clock = new THREE.Clock();
+        let _shadowNeedsUpdate = true;
+
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+            const dt = clock.getDelta();
+
+            TWEEN.update();
+            controls.update();
+            updateSimulation(dt);
+
+            // Recompute shadows only when pistons/valves have moved
+            if (_shadowNeedsUpdate) {
+                renderer.shadowMap.needsUpdate = true;
+                _shadowNeedsUpdate = false;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        initApp();
+        renderLoop();
+    </script>
+</body>
+</html>
