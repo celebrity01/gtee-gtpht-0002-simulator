@@ -873,15 +873,20 @@
         container.appendChild(renderer.domElement);
 
         // ── Subtle exponential fog for atmospheric depth ──────────────────────
-        scene.fog = new THREE.FogExp2(0x0a0e14, 0.11);
+        // NOTE: fog color must match scene.background for a seamless fade
+        scene.fog = new THREE.FogExp2(0x0e131a, 0.10);
 
-        // ── High-fidelity Studio Environment Map (8-panel IBL) ───────────────
-        // Provides physically-correct image-based-lighting for PBR metals & glass
+        // ── High-fidelity Studio Environment Map (IBL) ────────────────────────
+        // In Three.js r128 we MUST use compileCubemapShader() (not equirectangular)
+        // when generating an env map from a custom scene via fromScene().
+        // We also must NOT dispose() the generator until after the env render target
+        // has been fully consumed by the GPU (defer to next frame via setTimeout).
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        pmremGenerator.compileEquirectangularShader();
+        pmremGenerator.compileCubemapShader();
 
+        // Build a virtual 8-panel studio box that acts as the IBL source
         const envScene = new THREE.Scene();
-        const envPanels = [
+        const _envPanels = [
             // [color-hex, width, height,  pos-x, pos-y, pos-z]
             [0xffffff, 14, 14,   0,   12,  -6 ],   // overhead softbox (key)
             [0xe8f0ff, 10, 10,   6,    6,   6 ],   // front-right key
@@ -892,17 +897,23 @@
             [0xffffff, 6,  6,    0,   -4,   0 ],   // ground bounce
             [0xb0c4ff, 5,  5,   -8,    5,   0 ],   // side rim
         ];
-        envPanels.forEach(([col, w, h, px, py, pz]) => {
-            const m = new THREE.MeshBasicMaterial({ color: col });
+        _envPanels.forEach(([col, w, h, px, py, pz]) => {
+            const m = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
             const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
             p.position.set(px, py, pz);
             p.lookAt(0, 2, 0);
             envScene.add(p);
         });
 
-        const envRenderTarget = pmremGenerator.fromScene(envScene);
-        scene.environment = envRenderTarget.texture;
-        pmremGenerator.dispose();
+        // Render env map – do NOT dispose generator yet (defer to after first frame)
+        const _envRT = pmremGenerator.fromScene(envScene, 0.04);
+        scene.environment = _envRT.texture;
+
+        // Defer dispose until the GPU has actually used the texture
+        setTimeout(() => {
+            pmremGenerator.dispose();
+            envScene.children.forEach(c => { c.geometry.dispose(); c.material.dispose(); });
+        }, 1000);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
