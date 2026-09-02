@@ -559,10 +559,26 @@
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
     </style>
 
-    <!-- Three.js, OrbitControls & Tween.js Local Libs -->
-    <script src="libs/three.min.js"></script>
-    <script src="libs/OrbitControls.js"></script>
-    <script src="libs/tween.umd.js"></script>
+    <!-- Three.js r128 + OrbitControls + Tween.js via CDN (guaranteed on Vercel/any host) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+    <script>
+        // Fallback: if CDN fails, load local copy
+        if (typeof THREE === 'undefined') {
+            document.write('<script src="libs/three.min.js"><\/script>');
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" crossorigin="anonymous"></script>
+    <script>
+        if (typeof THREE !== 'undefined' && typeof THREE.OrbitControls === 'undefined') {
+            document.write('<script src="libs/OrbitControls.js"><\/script>');
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js" crossorigin="anonymous"></script>
+    <script>
+        if (typeof TWEEN === 'undefined') {
+            document.write('<script src="libs/tween.umd.js"><\/script>');
+        }
+    </script>
 </head>
 <body>
 
@@ -877,43 +893,44 @@
         scene.fog = new THREE.FogExp2(0x0e131a, 0.10);
 
         // ── High-fidelity Studio Environment Map (IBL) ────────────────────────
-        // In Three.js r128 we MUST use compileCubemapShader() (not equirectangular)
-        // when generating an env map from a custom scene via fromScene().
-        // We also must NOT dispose() the generator until after the env render target
-        // has been fully consumed by the GPU (defer to next frame via setTimeout).
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        pmremGenerator.compileCubemapShader();
+        // Wrapped in try/catch: if PMREMGenerator fails on any device/browser,
+        // the scene still looks great via the direct 6-light studio rig.
+        try {
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            pmremGenerator.compileCubemapShader();
 
-        // Build a virtual 8-panel studio box that acts as the IBL source
-        const envScene = new THREE.Scene();
-        const _envPanels = [
-            // [color-hex, width, height,  pos-x, pos-y, pos-z]
-            [0xffffff, 14, 14,   0,   12,  -6 ],   // overhead softbox (key)
-            [0xe8f0ff, 10, 10,   6,    6,   6 ],   // front-right key
-            [0x7ab0ff, 8,  8,   -6,    4,   5 ],   // left blue fill
-            [0xfff4e0, 6,  6,    6,    2,  -6 ],   // warm right rim
-            [0xffffff, 8,  8,   -6,    8,  -6 ],   // top-back bounce
-            [0x00e5ff, 4,  4,    0,    1,   8 ],   // cyan accent front
-            [0xffffff, 6,  6,    0,   -4,   0 ],   // ground bounce
-            [0xb0c4ff, 5,  5,   -8,    5,   0 ],   // side rim
-        ];
-        _envPanels.forEach(([col, w, h, px, py, pz]) => {
-            const m = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
-            const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
-            p.position.set(px, py, pz);
-            p.lookAt(0, 2, 0);
-            envScene.add(p);
-        });
+            const envScene = new THREE.Scene();
+            const _envPanels = [
+                [0xffffff, 14, 14,   0,  12,  -6],   // overhead softbox
+                [0xe8f0ff, 10, 10,   6,   6,   6],   // front-right key
+                [0x7ab0ff,  8,  8,  -6,   4,   5],   // blue fill
+                [0xfff4e0,  6,  6,   6,   2,  -6],   // warm rim
+                [0xffffff,  8,  8,  -6,   8,  -6],   // top-back bounce
+                [0x00e5ff,  4,  4,   0,   1,   8],   // cyan accent
+                [0xffffff,  6,  6,   0,  -4,   0],   // ground bounce
+                [0xb0c4ff,  5,  5,  -8,   5,   0],   // side rim
+            ];
+            _envPanels.forEach(([col, w, h, px, py, pz]) => {
+                const m = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
+                const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+                p.position.set(px, py, pz);
+                p.lookAt(0, 2, 0);
+                envScene.add(p);
+            });
 
-        // Render env map – do NOT dispose generator yet (defer to after first frame)
-        const _envRT = pmremGenerator.fromScene(envScene, 0.04);
-        scene.environment = _envRT.texture;
+            const _envRT = pmremGenerator.fromScene(envScene, 0.04);
+            scene.environment = _envRT.texture;
 
-        // Defer dispose until the GPU has actually used the texture
-        setTimeout(() => {
-            pmremGenerator.dispose();
-            envScene.children.forEach(c => { c.geometry.dispose(); c.material.dispose(); });
-        }, 1000);
+            // Defer dispose until GPU has consumed the texture
+            setTimeout(() => {
+                try { pmremGenerator.dispose(); } catch(e) {}
+                envScene.children.forEach(c => {
+                    try { c.geometry.dispose(); c.material.dispose(); } catch(e) {}
+                });
+            }, 2000);
+        } catch(e) {
+            console.warn('PMREMGenerator env map skipped (fallback to direct lighting):', e.message);
+        }
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
