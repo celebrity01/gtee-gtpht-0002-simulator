@@ -1129,11 +1129,64 @@
             anvilDark: new THREE.MeshPhysicalMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.75, clearcoat: 0.3, clearcoatRoughness: 0.3 }),
             gteeGoldBadge: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.15, metalness: 0.95, emissive: 0xd97706, emissiveIntensity: 0.2, clearcoat: 0.9, clearcoatRoughness: 0.1 }),
 
-            // Solenoid Valves
-            solenoidBodySolid: new THREE.MeshPhysicalMaterial({ color: 0xc4c9d0, roughness: 0.25, metalness: 0.9, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
-            solenoidCoilRed: new THREE.MeshPhysicalMaterial({ color: 0xd32f2f, roughness: 0.35, metalness: 0.2, clearcoat: 0.1, clearcoatRoughness: 0.4 }),
-            valveSpoolBrass: new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.15, metalness: 0.98, clearcoat: 0.5, clearcoatRoughness: 0.1 }),
-            valveGlassTrans: new THREE.MeshPhysicalMaterial({ color: 0x93c5fd, metalness: 0.1, roughness: 0.05, transmission: 0.92, thickness: 0.5, transparent: true, opacity: 1.0, ior: 1.5, clearcoat: 1.0, clearcoatRoughness: 0.0 }),
+            // Solenoid Valves — upgraded for 3/2 NC design
+            solenoidBodySolid: new THREE.MeshPhysicalMaterial({
+                color: 0xa8b4c0, roughness: 0.18, metalness: 0.92,
+                clearcoat: 0.85, clearcoatRoughness: 0.08,
+                envMapIntensity: 1.4
+            }),
+            solenoidBodyDark: new THREE.MeshPhysicalMaterial({
+                color: 0x2a3240, roughness: 0.3, metalness: 0.8,
+                clearcoat: 0.5, clearcoatRoughness: 0.2
+            }),
+            solenoidCoilRed: new THREE.MeshPhysicalMaterial({
+                color: 0xc0392b, roughness: 0.28, metalness: 0.15,
+                clearcoat: 0.6, clearcoatRoughness: 0.3,
+                emissive: 0x8b0000, emissiveIntensity: 0.0   // lit up in working mode via setRenderMode
+            }),
+            solenoidCoilActive: new THREE.MeshPhysicalMaterial({
+                color: 0xff3d1f, roughness: 0.25, metalness: 0.2,
+                clearcoat: 0.5, clearcoatRoughness: 0.3,
+                emissive: 0xff2200, emissiveIntensity: 1.1
+            }),
+            valveSpoolBrass: new THREE.MeshPhysicalMaterial({
+                color: 0xe8a020, roughness: 0.10, metalness: 0.99,
+                clearcoat: 0.9, clearcoatRoughness: 0.05,
+                envMapIntensity: 2.0
+            }),
+            valveGlassTrans: new THREE.MeshPhysicalMaterial({
+                color: 0x93c5fd, metalness: 0.05, roughness: 0.02,
+                transmission: 0.95, thickness: 0.6,
+                transparent: true, opacity: 1.0,
+                ior: 1.52, clearcoat: 1.0, clearcoatRoughness: 0.0,
+                envMapIntensity: 1.5
+            }),
+            // Port collar colour coding: P=supply(blue), A=work(orange), R=exhaust(grey)
+            portCollarBlue: new THREE.MeshPhysicalMaterial({
+                color: 0x1565c0, roughness: 0.2, metalness: 0.5,
+                clearcoat: 0.7, clearcoatRoughness: 0.15,
+                emissive: 0x0d47a1, emissiveIntensity: 0.15
+            }),
+            portCollarOrange: new THREE.MeshPhysicalMaterial({
+                color: 0xe65100, roughness: 0.18, metalness: 0.4,
+                clearcoat: 0.8, clearcoatRoughness: 0.1,
+                emissive: 0xbf360c, emissiveIntensity: 0.15
+            }),
+            portCollarGrey: new THREE.MeshPhysicalMaterial({
+                color: 0x546e7a, roughness: 0.35, metalness: 0.65,
+                clearcoat: 0.3, clearcoatRoughness: 0.3
+            }),
+            // Spring / return end cap
+            springCoilSilver: new THREE.MeshPhysicalMaterial({
+                color: 0xd0d8e0, roughness: 0.12, metalness: 0.98,
+                clearcoat: 1.0, clearcoatRoughness: 0.04,
+                envMapIntensity: 1.8
+            }),
+            hexCouplerSilver: new THREE.MeshPhysicalMaterial({
+                color: 0x9eacb8, roughness: 0.15, metalness: 0.95,
+                clearcoat: 0.9, clearcoatRoughness: 0.06,
+                envMapIntensity: 1.6
+            }),
 
             // Limit Switches
             switchBodyRed: new THREE.MeshPhysicalMaterial({ color: 0xd32f2f, roughness: 0.4, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4 }),
@@ -1146,11 +1199,35 @@
             compMotorSilver: new THREE.MeshPhysicalMaterial({ color: 0xced4da, roughness: 0.25, metalness: 0.95, clearcoat: 0.4, clearcoatRoughness: 0.2 }),
             compFinsBlack: new THREE.MeshPhysicalMaterial({ color: 0x181c24, roughness: 0.5, metalness: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.4 }),
             compBoxRed: new THREE.MeshPhysicalMaterial({ color: 0xc62828, roughness: 0.3, metalness: 0.2, clearcoat: 0.5, clearcoatRoughness: 0.3 }),
-            brassFitting: new THREE.MeshPhysicalMaterial({ color: 0xd4af37, roughness: 0.15, metalness: 0.98, clearcoat: 0.6, clearcoatRoughness: 0.1 }),
+            brassFitting: new THREE.MeshPhysicalMaterial({
+                color: 0xd4af37, roughness: 0.12, metalness: 0.99,
+                clearcoat: 0.8, clearcoatRoughness: 0.05,
+                envMapIntensity: 1.8
+            }),
 
-            // Tubing & Wires
-            pneumaticOrangeSolid: new THREE.MeshPhysicalMaterial({ color: 0xff6d00, roughness: 0.2, metalness: 0.1, clearcoat: 0.9, clearcoatRoughness: 0.1 }),
-            pneumaticFlowActive: new THREE.MeshPhysicalMaterial({ color: 0xff6d00, roughness: 0.15, emissive: 0xff9100, emissiveIntensity: 0.8, clearcoat: 1.0, clearcoatRoughness: 0.1 }),
+            // Tubing & Wires — upgraded: distinct working-line colours, glow on active
+            pneumaticOrangeSolid: new THREE.MeshPhysicalMaterial({
+                color: 0xff6200, roughness: 0.15, metalness: 0.05,
+                clearcoat: 1.0, clearcoatRoughness: 0.05
+            }),
+            pneumaticBlueSupply: new THREE.MeshPhysicalMaterial({
+                color: 0x1565c0, roughness: 0.18, metalness: 0.05,
+                clearcoat: 0.9, clearcoatRoughness: 0.08
+            }),
+            pneumaticGreyExhaust: new THREE.MeshPhysicalMaterial({
+                color: 0x546e7a, roughness: 0.3, metalness: 0.1,
+                clearcoat: 0.4, clearcoatRoughness: 0.3
+            }),
+            pneumaticFlowActive: new THREE.MeshPhysicalMaterial({
+                color: 0xff8c00, roughness: 0.10,
+                emissive: 0xff6200, emissiveIntensity: 1.2,
+                clearcoat: 1.0, clearcoatRoughness: 0.0
+            }),
+            pneumaticFlowExhaust: new THREE.MeshPhysicalMaterial({
+                color: 0x78909c, roughness: 0.25,
+                emissive: 0x37474f, emissiveIntensity: 0.4,
+                clearcoat: 0.5
+            }),
             wireRed: new THREE.MeshPhysicalMaterial({ color: 0xef4444, roughness: 0.4, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4 }),
             wireBlack: new THREE.MeshPhysicalMaterial({ color: 0x18181b, roughness: 0.4, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4 }),
             wireYellow: new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4, metalness: 0.1 }),
@@ -1977,23 +2054,91 @@
             dynamicObjects.transMeshItems.push({ mesh: hose, origMat: materials.pneumaticOrangeSolid, transMat: materials.pneumaticFlowActive });
         }
 
-        // 9. Pneumatic Tubing Routes
+        // 9. Pneumatic Tubing Routes — 3/2 circuit colour coded
+        // Blue  = P supply  (FRL → valve inlet)
+        // Orange = A working (valve A-port → cylinder cap end)
+        // Grey   = R exhaust (valve R-port → atmosphere silencer)
         function buildPneumaticTubing() {
-            const routes = [
-                [new THREE.Vector3(-0.90, 0.78, 0.08), new THREE.Vector3(-0.85, 0.50, 0.12), new THREE.Vector3(-0.65, 0.38, 0.14), new THREE.Vector3(-0.52, 0.58, 0.08)],
-                [new THREE.Vector3(-0.88, 0.76, 0.08), new THREE.Vector3(-0.60, 0.28, 0.15), new THREE.Vector3(0.05, 0.24, 0.16), new THREE.Vector3(0.45, 0.58, 0.08)],
-                [new THREE.Vector3(-0.55, 0.65, 0.08), new THREE.Vector3(-0.70, 0.90, 0.16), new THREE.Vector3(-0.82, 1.25, 0.14), new THREE.Vector3(-0.79, 1.52, 0.08)],
-                [new THREE.Vector3(-0.49, 0.65, 0.08), new THREE.Vector3(-0.44, 0.95, 0.15), new THREE.Vector3(-0.48, 1.35, 0.12), new THREE.Vector3(-0.51, 1.52, 0.08)],
-                [new THREE.Vector3(0.42, 0.65, 0.08), new THREE.Vector3(0.28, 0.95, 0.16), new THREE.Vector3(0.23, 1.30, 0.14), new THREE.Vector3(0.24, 1.52, 0.08)],
-                [new THREE.Vector3(0.48, 0.65, 0.08), new THREE.Vector3(0.55, 0.95, 0.15), new THREE.Vector3(0.55, 1.35, 0.12), new THREE.Vector3(0.52, 1.52, 0.08)]
-            ];
-
-            routes.forEach(pts => {
-                const curve = new THREE.CatmullRomCurve3(pts);
-                const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.007, 10, false), materials.pneumaticOrangeSolid);
+            // Helper: build one tube + push-in fittings at each end
+            function makeTube(pts, mat, transMat, radius) {
+                radius = radius || 0.0075;
+                const curve  = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+                const tube   = new THREE.Mesh(
+                    new THREE.TubeGeometry(curve, 80, radius, 10, false),
+                    mat
+                );
+                tube.castShadow = true;
                 scene.add(tube);
-                dynamicObjects.transMeshItems.push({ mesh: tube, origMat: materials.pneumaticOrangeSolid, transMat: materials.pneumaticFlowActive });
-            });
+                dynamicObjects.transMeshItems.push({ mesh: tube, origMat: mat, transMat: transMat || materials.pneumaticFlowActive });
+
+                // Brass push-in fittings at start and end
+                [pts[0], pts[pts.length - 1]].forEach(pt => {
+                    const fit = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.006, 0.008, 0.016, 10),
+                        materials.brassFitting
+                    );
+                    fit.position.copy(pt);
+                    scene.add(fit);
+                });
+            }
+
+            // ── Blue Supply lines: FRL → V1 inlet (P), FRL → V2 inlet (P) ─────
+            makeTube([
+                new THREE.Vector3(-0.90, 0.78, 0.08),
+                new THREE.Vector3(-0.85, 0.50, 0.12),
+                new THREE.Vector3(-0.65, 0.38, 0.14),
+                new THREE.Vector3(-0.52, 0.60, 0.08)
+            ], materials.pneumaticBlueSupply, materials.pneumaticBlueSupply, 0.0065);
+
+            makeTube([
+                new THREE.Vector3(-0.88, 0.76, 0.08),
+                new THREE.Vector3(-0.60, 0.28, 0.15),
+                new THREE.Vector3( 0.05, 0.24, 0.16),
+                new THREE.Vector3( 0.45, 0.60, 0.08)
+            ], materials.pneumaticBlueSupply, materials.pneumaticBlueSupply, 0.0065);
+
+            // ── Orange Working lines: V1 A-port → Cyl 1A cap, V2 A-port → Cyl 2A cap ──
+            makeTube([
+                new THREE.Vector3(-0.55, 0.66, 0.08),
+                new THREE.Vector3(-0.62, 0.78, 0.14),
+                new THREE.Vector3(-0.70, 0.95, 0.18),
+                new THREE.Vector3(-0.80, 1.22, 0.16),
+                new THREE.Vector3(-0.79, 1.52, 0.08)
+            ], materials.pneumaticOrangeSolid, materials.pneumaticFlowActive, 0.0080);
+
+            makeTube([
+                new THREE.Vector3(-0.49, 0.66, 0.08),
+                new THREE.Vector3(-0.44, 0.88, 0.16),
+                new THREE.Vector3(-0.47, 1.20, 0.14),
+                new THREE.Vector3(-0.51, 1.52, 0.08)
+            ], materials.pneumaticOrangeSolid, materials.pneumaticFlowActive, 0.0080);
+
+            makeTube([
+                new THREE.Vector3( 0.42, 0.66, 0.08),
+                new THREE.Vector3( 0.28, 0.88, 0.18),
+                new THREE.Vector3( 0.22, 1.20, 0.16),
+                new THREE.Vector3( 0.24, 1.52, 0.08)
+            ], materials.pneumaticOrangeSolid, materials.pneumaticFlowActive, 0.0080);
+
+            makeTube([
+                new THREE.Vector3( 0.48, 0.66, 0.08),
+                new THREE.Vector3( 0.55, 0.88, 0.16),
+                new THREE.Vector3( 0.54, 1.20, 0.14),
+                new THREE.Vector3( 0.52, 1.52, 0.08)
+            ], materials.pneumaticOrangeSolid, materials.pneumaticFlowActive, 0.0080);
+
+            // ── Grey Exhaust stubs: R-port of each valve → short stub down ─────
+            makeTube([
+                new THREE.Vector3(-0.54, 0.60, 0.08),
+                new THREE.Vector3(-0.56, 0.52, 0.10),
+                new THREE.Vector3(-0.57, 0.44, 0.08)
+            ], materials.pneumaticGreyExhaust, materials.pneumaticFlowExhaust, 0.0060);
+
+            makeTube([
+                new THREE.Vector3( 0.41, 0.60, 0.08),
+                new THREE.Vector3( 0.39, 0.52, 0.10),
+                new THREE.Vector3( 0.38, 0.44, 0.08)
+            ], materials.pneumaticGreyExhaust, materials.pneumaticFlowExhaust, 0.0060);
         }
 
         // 10. Electrical Wire Paths
@@ -2113,6 +2258,40 @@
                     spObj.group.position.x += (targetX - spObj.group.position.x) * 0.22;
                 }
             });
+
+            // ── Coil Glow: energised coil pulses warm orange-red ─────────────
+            // ── Tube Flow Pulse: orange working lines pulse in sync with flow ─
+            if (SIM.mode !== 'physical') {
+                const t = Date.now() * 0.003;
+                // Pulse intensity: stronger when cylinder is actually moving
+                SIM.valves.forEach((v) => {
+                    const isOn = (v.state === 'A');
+                    // Animate emissive intensity on the shared coil material
+                    // (affects all coils — individual meshes would need per-mesh material clones)
+                    materials.solenoidCoilRed.emissiveIntensity = isOn
+                        ? 0.55 + 0.35 * Math.sin(t * 3.5)
+                        : 0.0;
+                    materials.solenoidCoilRed.emissive.setHex(isOn ? 0xcc2200 : 0x000000);
+                });
+
+                // Pulse active orange working tubes
+                const flowPulse = 0.6 + 0.6 * Math.sin(t * 4.0);
+                const anyExtending = SIM.cylinders.some(c => c.pos < c.target - 0.02);
+                materials.pneumaticFlowActive.emissiveIntensity = anyExtending
+                    ? 0.7 + 0.5 * flowPulse
+                    : 0.3;
+
+                // Pulse exhaust material when any cylinder is retracting
+                const anyRetracting = SIM.cylinders.some(c => c.pos > c.target + 0.02);
+                materials.pneumaticFlowExhaust.emissiveIntensity = anyRetracting
+                    ? 0.25 + 0.2 * Math.sin(t * 5.0)
+                    : 0.05;
+                _shadowNeedsUpdate = true;
+            } else {
+                materials.solenoidCoilRed.emissiveIntensity = 0.0;
+                materials.pneumaticFlowActive.emissiveIntensity = 0.0;
+                materials.pneumaticFlowExhaust.emissiveIntensity = 0.0;
+            }
 
             updateFloatingTags();
             updateTelemetryHUD();
